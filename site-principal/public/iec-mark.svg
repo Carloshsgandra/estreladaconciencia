@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" role="img" aria-labelledby="title desc">
+  <title id="title">Símbolo do Instituto Estrela da Consciência</title>
+  <desc id="desc">Estrela dourada cercada por órbitas, luas e folhas.</desc>
+  <defs>
+    <radialGradient id="gold" cx="50%" cy="42%" r="60%">
+      <stop offset="0" stop-color="#fff6c9"/><stop offset=".35" stop-color="#f7cf78"/><stop offset="1" stop-color="#b87a2f"/>
+    </radialGradient>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <g fill="none" stroke="url(#gold)" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="210" cy="210" r="147" stroke-width="2"/>
+    <circle cx="210" cy="210" r="118" stroke-width="1" opacity=".72"/>
+    <ellipse cx="210" cy="210" rx="86" ry="136" stroke-width="1" opacity=".62"/>
+    <ellipse cx="210" cy="210" rx="136" ry="86" stroke-width="1" opacity=".62"/>
+    <path d="M210 88v244M88 210h244M124 124l172 172M296 124 124 296" stroke-width="1" opacity=".6"/>
+    <path d="M210 128 228 190 292 210 228 230 210 294 192 230 128 210 192 190Z" fill="url(#gold)" stroke-width="1.5" filter="url(#glow)"/>
+    <circle cx="210" cy="210" r="10" fill="#fff7d1" stroke-width="1" filter="url(#glow)"/>
+    <path d="M210 30a30 30 0 1 0 0 60 24 24 0 1 1 0-60Z" fill="url(#gold)"/>
+    <path d="M128 56a19 19 0 1 0 12 34 23 23 0 0 1-12-34ZM292 56a19 19 0 1 1-12 34 23 23 0 0 0 12-34Z" fill="url(#gold)"/>
+    <path d="M62 192a28 28 0 1 0 13 50 33 33 0 0 1-13-50ZM358 192a28 28 0 1 1-13 50 33 33 0 0 0 13-50Z" fill="url(#gold)"/>
+    <path d="M176 318c-30-17-42-43-45-74 29 14 45 39 45 74Zm68 0c30-17 42-43 45-74-29 14-45 39-45 74Z" fill="url(#gold)" opacity=".72"/>
+    <path d="M210 294c-9 25-8 46 0 68 8-22 9-43 0-68Z" fill="url(#gold)"/>
+  </g>
+</svg>

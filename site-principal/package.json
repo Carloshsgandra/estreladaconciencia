@@ -1,0 +1,22 @@
+{
+  "name": "iec-site-principal-netlify",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "node scripts/build-netlify.mjs",
+    "predev": "npm run build",
+    "dev": "npx --yes netlify-cli dev",
+    "test": "node --test tests/*.mjs"
+  },
+  "dependencies": {
+    "@netlify/database": "^1.0.0",
+    "@netlify/functions": "^5.0.0",
+    "@netlify/identity": "^1.0.0",
+    "postgres": "^3.4.7"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "iec-painel-administrativo-netlify",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "node scripts/build-netlify.mjs",
+    "predev": "npm run build",
+    "dev": "npx --yes netlify-cli dev"
+  },
+  "dependencies": {
+    "@netlify/functions": "^5.0.0",
+    "@netlify/identity": "^1.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}

@@ -18,6 +18,7 @@ export default async function handler(request: Request, _context: Context) {
   try {
     const user = await getUser();
     if (!user) return response({ error:'Entre na conta administrativa para continuar.' },401);
+    if (!user.confirmedAt && !user.confirmed_at && !user.email_confirmed_at) return response({ error:'Confirme o e-mail administrativo antes de continuar.' },403);
     if (!authorized(user)) return response({ error:'Acesso exclusivo à conta administradora autorizada.' },403);
     if (request.method === 'POST') {
       if (request.headers.get('origin') !== new URL(request.url).origin) return response({ error:'Origem não permitida.' },403);
@@ -27,11 +28,11 @@ export default async function handler(request: Request, _context: Context) {
     const bridgeSecret = process.env.ADMIN_BRIDGE_SECRET;
     if (!mainUrl || !bridgeSecret) return response({ error:'Conexão com a agenda não configurada.' },503);
     const body = request.method === 'POST' ? await request.text() : undefined;
-    if (body && body.length > 40000) return response({ error:'Conteúdo maior que o permitido.' },413);
+    if (body && new TextEncoder().encode(body).byteLength > 65536) return response({ error:'Conteúdo maior que o permitido.' },413);
     const upstream = await fetch(new URL('/api/bridge',mainUrl),{
       method:request.method,
       redirect:'error',
-      headers:{ 'Content-Type':'application/json', 'X-Admin-Bridge':bridgeSecret },
+      headers:{ 'Accept':'application/json', 'Content-Type':'application/json', 'Origin':new URL(request.url).origin, 'X-Admin-Bridge':bridgeSecret },
       body,
       signal:AbortSignal.timeout(15000)
     });

@@ -2,43 +2,17 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
 import * as domain from '../lib/domain.js';
-
-const api = fs.readFileSync(new URL('../netlify/functions/api.mts',import.meta.url),'utf8');
-const migration = fs.readFileSync(new URL('../netlify/database/migrations/202610140001_initial_schema.sql',import.meta.url),'utf8');
-
-test('catálogo e regra promocional permanecem no servidor',() => {
-  const store = domain.defaults();
-  assert.equal(store.services.find(item => item.id === 'avulsa').price,97);
-  assert.equal(store.services.find(item => item.id === 'mentoria').price,97);
-  assert.equal(store.settings.whatsapp,'11945915395');
-  assert.match(api,/today\(\) >= '2027-01-01' \? 137 : 97/);
-});
-
-test('datas, horários e links mantêm validação',() => {
-  assert.equal(domain.validDate('2026-12-31'),true);
-  assert.equal(domain.validDate('2026-02-30'),false);
-  assert.equal(domain.validTime('23:59'),true);
-  assert.equal(domain.validTime('24:00'),false);
-  assert.equal(domain.safeVideo('https://meet.example/sala'),true);
-  assert.equal(domain.safeVideo('javascript:alert(1)'),false);
-});
-
-test('banco impede reservas simultâneas sobrepostas',() => {
-  assert.match(migration,/EXCLUDE USING gist/);
-  assert.match(migration,/int8range\(start_at, end_at, '\[\)'\) WITH &&/);
-  assert.match(api,/error\?\.code === '23P01'/);
-});
-
-test('migração PostgreSQL evita identificadores reservados',() => {
-  assert.doesNotMatch(migration,/\bwindow\s+BIGINT\b/i);
-  assert.doesNotMatch(migration,/\bkey\s+TEXT\s+PRIMARY KEY\b/i);
-  assert.match(migration,/window_id BIGINT NOT NULL/);
-  assert.match(api,/RETURNING request_count/);
-});
-
-test('API exige identidade, origem válida e segredo administrativo',() => {
-  assert.match(api,/await getUser\(\)/);
-  assert.match(api,/checkOrigin\(req\)/);
-  assert.match(api,/ADMIN_BRIDGE_SECRET/);
-  assert.match(api,/constantEqual/);
-});
+const api=fs.readFileSync(new URL('../netlify/functions/api.mts',import.meta.url),'utf8');
+const rules=fs.readFileSync(new URL('../../firestore.rules',import.meta.url),'utf8');
+const siteCeremonies=fs.readFileSync(new URL('../public/ceremonies.js',import.meta.url),'utf8');
+const adminCeremonies=fs.readFileSync(new URL('../../painel-administrativo/public/ceremonies.js',import.meta.url),'utf8');
+test('catálogo, textos e regra promocional permanecem no servidor',()=>{const store=domain.defaults();assert.equal(store.services.find(item=>item.id==='avulsa').price,97);assert.equal(store.services.find(item=>item.id==='mentoria').price,97);assert.match(store.services.find(item=>item.id==='mapa').title,/Cerimônia com a medicina do Ayahuasca/);assert.match(api,/today\(\)>='2027-01-01'\?137:97/);});
+test('datas, horários e links mantêm validação',()=>{assert.equal(domain.validDate('2026-12-31'),true);assert.equal(domain.validDate('2026-02-30'),false);assert.equal(domain.validTime('23:59'),true);assert.equal(domain.validTime('24:00'),false);assert.equal(domain.safeVideo('https://meet.example/sala'),true);assert.equal(domain.safeVideo('javascript:alert(1)'),false);});
+test('Firestore nega todo acesso direto do navegador',()=>{assert.match(rules,/match \/\{document=\*\*\}/);assert.match(rules,/allow read, write: if false/);});
+test('última vaga usa transação e ID determinístico',()=>{assert.match(api,/db\.runTransaction/);assert.match(api,/for\(let i=1;i<=c\.capacity;i\+\+\)/);assert.match(api,/doc\(`\$\{ceremonyId\}_\$\{i\}`\)/);assert.match(api,/if\(!seatNumber\)fail\('Esta cerimônia está lotada\.',409\)/);});
+test('cancelamento libera vaga e duplicidade ativa é recusada',()=>{assert.match(api,/activeRef=db\.collection\('activeBookings'\)/);assert.match(api,/if\(duplicate\.exists\)fail\('Você já possui uma inscrição ativa nesta cerimônia\.',409\)/);assert.match(api,/tx\.delete\(db\.collection\('ceremonySeats'\)/);});
+test('cerimônia fechada e passada são recusadas',()=>{assert.match(api,/if\(!c\.open\)fail\('As inscrições desta cerimônia estão fechadas\.',409\)/);assert.match(api,/if\(c\.startAt<=Date\.now\(\)\)fail\('Esta cerimônia já ocorreu ou está em andamento\.',409\)/);});
+test('anamnese exige detalhes, assinatura e consentimento sensível',()=>{assert.match(api,/details\(physicalDiagnosis,value\.physicalDiagnosisDetails\)/);assert.match(api,/assinatura digitada deve corresponder ao nome completo/i);assert.match(api,/healthDataConsent/);assert.match(siteCeremonies,/Não interrompa nem altere medicamentos por conta própria/);});
+test('notas internas não chegam ao participante nem à disponibilidade',()=>{assert.match(api,/if\(!admin\)delete copy\.internal/);assert.match(api,/ceremonySeats'\)\.doc\(`\$\{ceremonyId\}_\$\{seatNumber\}`\),\{ceremonyId,seatNumber,bookingId,userId:user\.userId,createdAt:Date\.now\(\)\}\)/);assert.match(api,/bookingSlots'\)\.doc\(id\)/);assert.match(adminCeremonies,/Uso interno — nunca exibido ao participante/);});
+test('API exige identidade, origem, JSON, limite e segredo com comparação constante',()=>{assert.match(api,/await getUser\(\)/);assert.match(api,/allowedOrigin\(req,admin\)/);assert.match(api,/Confirme seu e-mail antes de continuar/);assert.match(api,/application\/json/);assert.match(api,/byteLength>65536/);assert.match(api,/ADMIN_BRIDGE_SECRET/);assert.match(api,/constantEqual/);assert.doesNotMatch(api,/error\.stack|stack:/);});
+test('Tarô e Reiki reservam todos os intervalos na transação',()=>{assert.match(api,/for\(let at=start;at<appointment\.endAt;at\+=15\*60000\)/);assert.match(api,/slots\.some\(\(slot:any\)=>slot\.exists\)/);assert.match(api,/slotRefs\.forEach/);});

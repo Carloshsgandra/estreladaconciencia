@@ -13,9 +13,9 @@
     section.querySelectorAll('[data-intention]').forEach(button=>button.addEventListener('click',()=>{
       section.querySelectorAll('[data-intention]').forEach(item=>item.setAttribute('aria-pressed','false'));
       button.setAttribute('aria-pressed','true');
-      const labels={clareza:'O Jogo de Tarô ajuda a iluminar perguntas, padrões e possibilidades.',equilíbrio:'O Reiki oferece um tempo de cuidado, presença e equilíbrio energético.',ritual:'O ritual de Ayahuasca começa com uma conversa individual pelo WhatsApp.',conversar:'Se ainda não sabe qual caminho escolher, podemos conversar primeiro.'};
+      const labels={clareza:'O Jogo de Tarô ajuda a iluminar perguntas, padrões e possibilidades.',equilíbrio:'O Reiki oferece um tempo de cuidado, presença e equilíbrio energético.',ritual:'O cerimônia com a medicina do Ayahuasca começa com uma conversa individual pelo WhatsApp.',conversar:'Se ainda não sabe qual caminho escolher, podemos conversar primeiro.'};
       const isWhatsApp=button.dataset.service==='whatsapp';
-      const target=isWhatsApp?`${whatsapp}?text=${encodeURIComponent('Olá! Vim pelo site do Instituto Estrela da Consciência e gostaria de conversar sobre '+(button.dataset.intention==='ritual'?'o ritual de Ayahuasca.':'os atendimentos.'))}`:`#book/${button.dataset.service}`;
+      const target=isWhatsApp?`${whatsapp}?text=${encodeURIComponent('Olá! Vim pelo site do Instituto Estrela da Consciência e gostaria de conversar sobre '+(button.dataset.intention==='ritual'?'o cerimônia com a medicina do Ayahuasca.':'os atendimentos.'))}`:`#book/${button.dataset.service}`;
       section.querySelector('.intention-result').innerHTML=`<span>${labels[button.dataset.intention]}</span><a class="btn small" href="${target}" ${isWhatsApp?'target="_blank" rel="noopener noreferrer"':''}>${isWhatsApp?'Conversar no WhatsApp':'Agendar atendimento'} →</a>`;
     }));
     return section;
@@ -29,7 +29,7 @@
     if(hero&&!hero.dataset.iec){
       hero.dataset.iec='true';
       const copy=hero.querySelector('.hero-copy');
-      copy.innerHTML=`<div class="eyebrow">INSTITUTO ESTRELA DA CONSCIÊNCIA</div><h1>Um espaço para<br><em>escutar o que<br>já se move em você.</em></h1><p>Jogo de Tarô, Reiki e ritual de Ayahuasca conduzidos com presença, clareza e cuidado. Cada atendimento respeita seu momento e sua história.</p><div class="hero-actions"><a class="btn" href="#book">Agendar minha sessão <span aria-hidden="true">↗</span></a><a class="text-link" href="#intention">Escolher uma intenção <span aria-hidden="true">↓</span></a></div><div class="hero-foot"><span></span> Presença <span></span> Acolhimento <span></span> Autoconhecimento</div>`;
+      copy.innerHTML=`<div class="eyebrow">INSTITUTO ESTRELA DA CONSCIÊNCIA</div><h1>Um espaço para<br><em>escutar o que<br>já se move em você.</em></h1><p>Jogo de Tarô, Reiki e cerimônia com a medicina do Ayahuasca conduzidos com presença, clareza e cuidado. Cada atendimento respeita seu momento e sua história.</p><div class="hero-actions"><a class="btn" href="#book">Agendar minha sessão <span aria-hidden="true">↗</span></a><a class="text-link" href="#intention">Escolher uma intenção <span aria-hidden="true">↓</span></a></div><div class="hero-foot"><span></span> Presença <span></span> Acolhimento <span></span> Autoconhecimento</div>`;
       hero.querySelector('.hero-art').innerHTML=emblem();
       const services=main.querySelector('#services');
       if(services){
@@ -44,7 +44,7 @@
         }
         const ritual=document.createElement('article');
         ritual.className='service ritual-service';
-        ritual.innerHTML=`<div class="service-art"><span class="number">03</span><img src="/iec-mark.svg" alt="" loading="lazy"></div><span class="promo-seal">CONVERSA PRÉVIA</span><h3>Ritual de Ayahuasca</h3><p>Uma experiência ritualística que começa com acolhimento, orientações e uma conversa individual.</p><div class="service-meta"><span>Informações pelo WhatsApp</span><strong>Valor conversado</strong></div><a class="text-link" href="${whatsapp}?text=${encodeURIComponent('Olá! Vim pelo site do Instituto Estrela da Consciência e gostaria de conversar sobre o ritual de Ayahuasca.')}" target="_blank" rel="noopener noreferrer">Conversar no WhatsApp <span aria-hidden="true">↗</span></a>`;
+        ritual.innerHTML=`<div class="service-art"><span class="number">03</span><img src="/iec-mark.svg" alt="" loading="lazy"></div><span class="promo-seal">CONVERSA PRÉVIA</span><h3>Cerimônia com a medicina do Ayahuasca</h3><p>Uma experiência ritualística que começa com acolhimento, orientações e uma conversa individual.</p><div class="service-meta"><span>Informações pelo WhatsApp</span><strong>Valor conversado</strong></div><a class="text-link" href="${whatsapp}?text=${encodeURIComponent('Olá! Vim pelo site do Instituto Estrela da Consciência e gostaria de conversar sobre o cerimônia com a medicina do Ayahuasca.')}" target="_blank" rel="noopener noreferrer">Conversar no WhatsApp <span aria-hidden="true">↗</span></a>`;
         grid.append(ritual);
         grid.classList.add('catalog-three');
       }

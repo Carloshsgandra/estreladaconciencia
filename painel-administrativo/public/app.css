@@ -63,3 +63,5 @@ html[data-theme=dark] .btn:not(.outline):not(.light){background:var(--gold);colo
 .auth-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,520px);gap:clamp(32px,7vw,110px);align-items:start;min-height:calc(100vh - 220px);padding-top:clamp(32px,7vw,90px)}
 .auth-layout>div:first-child{max-width:620px}.auth-layout h1{margin:.2em 0;font-size:clamp(46px,7vw,92px);line-height:.92}.auth-layout .panel{border-top:2px solid var(--gold);padding-top:32px}.auth-layout .btn{width:100%;margin-top:8px}.auth-layout .text-link{display:block;margin-top:20px}.auth-error{border-color:#a44558;color:#7d2034}
 @media(max-width:760px){.auth-layout{grid-template-columns:1fr;min-height:auto}.auth-layout h1{font-size:clamp(42px,15vw,68px)}}
+
+.health-record{margin:18px 0}.health-record summary{cursor:pointer;font-size:16px}.sensitive-banner{margin:18px 0;padding:12px;border:1px solid #b98935;font-weight:700}.internal-form{margin-top:24px;border-top:1px solid var(--line);padding-top:20px}.internal-error,[role=alert]:not(:empty){margin:12px 0;color:#b43a46}

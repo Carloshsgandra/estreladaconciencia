@@ -1,39 +1,8 @@
-import { getUser, handleAuthCallback, login, logout } from '@netlify/identity';
-
-const form = document.querySelector('#auth-form');
-const message = document.querySelector('#auth-message');
-const submit = document.querySelector('#auth-submit');
-const params = new URLSearchParams(location.search);
-const returnTo = params.get('return_to') || '/#admin';
-
-function safeReturn(value) {
-  try { const url = new URL(value, location.origin); return url.origin === location.origin ? url.pathname + url.search + url.hash : '/'; }
-  catch { return '/'; }
-}
-
-function show(text, error = false) {
-  message.textContent = text;
-  message.className = error ? 'notice auth-error' : 'notice';
-}
-
-async function start() {
-  try {
-    if (params.get('action') === 'logout') { await logout(); location.replace('/acesso.html'); return; }
-    const callback = await handleAuthCallback();
-    const user = callback?.user || await getUser();
-    if (user) location.replace(safeReturn(returnTo));
-  } catch (error) { show(error?.message || 'Não foi possível concluir o acesso.', true); }
-}
-
-form?.addEventListener('submit', async event => {
-  event.preventDefault();
-  submit.disabled = true;
-  const data = new FormData(form);
-  try {
-    await login(String(data.get('email') || '').trim().toLowerCase(), String(data.get('password') || ''));
-    location.replace(safeReturn(returnTo));
-  } catch (error) { show(error?.message || 'Confira seus dados e tente novamente.', true); }
-  finally { submit.disabled = false; }
-});
-
-start();
+import { getUser, handleAuthCallback, login, logout, requestPasswordRecovery, updateUser } from '@netlify/identity';
+const form=document.querySelector('#auth-form'),message=document.querySelector('#auth-message'),title=document.querySelector('#auth-title'),intro=document.querySelector('#auth-intro'),emailField=document.querySelector('#email-field'),passwordField=document.querySelector('#password-field'),passwordLabel=document.querySelector('#password-label'),recovery=document.querySelector('#auth-recovery'),submit=document.querySelector('#auth-submit');
+const params=new URLSearchParams(location.search),returnTo=params.get('return_to')||'/#admin';let mode='login';
+function safeReturn(value){try{const url=new URL(value,location.origin);return url.origin===location.origin?url.pathname+url.search+url.hash:'/';}catch{return '/';}}
+function show(text,error=false){message.textContent=text;message.className=error?'notice auth-error':'notice';}
+function render(){const recoveryMode=mode==='recovery',resetMode=mode==='reset'||mode==='change';title.textContent=recoveryMode?'Recuperar senha':resetMode?'Definir nova senha':'Entrar no painel';intro.textContent=recoveryMode?'Informe o e-mail administrativo para receber o link.':resetMode?'Crie uma nova senha com pelo menos oito caracteres.':'Use a conta administrativa autorizada.';emailField.hidden=resetMode;passwordField.hidden=recoveryMode;emailField.querySelector('input').required=!resetMode;passwordField.querySelector('input').required=!recoveryMode;passwordLabel.textContent=resetMode?'Nova senha':'Senha';submit.textContent=recoveryMode?'Enviar link →':resetMode?'Salvar nova senha →':'Entrar →';recovery.hidden=recoveryMode||resetMode;message.textContent='';}
+async function start(){try{if(params.get('action')==='logout'){await logout();location.replace('/acesso.html');return;}const callback=await handleAuthCallback();if(callback?.type==='recovery')mode='reset';else if(params.get('action')==='change-password'&&await getUser())mode='change';else if(callback?.user||await getUser()){location.replace(safeReturn(returnTo));return;}render();}catch(error){show(error?.message||'Não foi possível concluir o acesso.',true);}}
+recovery?.addEventListener('click',()=>{mode='recovery';render();});form?.addEventListener('submit',async event=>{event.preventDefault();submit.disabled=true;const data=new FormData(form),email=String(data.get('email')||'').trim().toLowerCase(),password=String(data.get('password')||'');try{if(mode==='recovery'){await requestPasswordRecovery(email);show('Se o e-mail estiver cadastrado, enviaremos um link de recuperação.');}else if(mode==='reset'||mode==='change'){await updateUser({password});show('Senha atualizada. Redirecionando…');setTimeout(()=>location.replace(safeReturn(returnTo)),700);}else{await login(email,password);location.replace(safeReturn(returnTo));}}catch(error){show(error?.message||'Confira seus dados e tente novamente.',true);}finally{submit.disabled=false;}});render();start();

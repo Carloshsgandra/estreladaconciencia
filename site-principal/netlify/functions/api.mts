@@ -14,11 +14,22 @@ const email=(value:unknown)=>{ const result=clean(value,180,true).toLowerCase();
 const phone=(value:unknown)=>{ const result=clean(value,24,true).replace(/\D/g,''); if(!/^[1-9]{2}9\d{8}$/.test(result))fail('Informe um celular com DDD.'); return result; };
 const bool=(value:unknown,message='Confira as confirmações obrigatórias.')=>{ if(value!==true)fail(message); return true; };
 
+function privateKeyFromEnvironment(raw:string|undefined){
+  let key=raw?.trim();
+  // Netlify stores environment values as strings. Accept both the raw PEM value
+  // and the JSON-string form commonly copied from a service-account file.
+  if(key?.startsWith('"')&&key.endsWith('"')){
+    try { const parsed=JSON.parse(key); if(typeof parsed==='string') key=parsed; } catch { /* validated below */ }
+  }
+  return key?.replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n');
+}
+
 function database(){
   const projectId=process.env.FIREBASE_PROJECT_ID;
   const clientEmail=process.env.FIREBASE_CLIENT_EMAIL;
-  const privateKey=process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g,'\n');
+  const privateKey=privateKeyFromEnvironment(process.env.FIREBASE_PRIVATE_KEY);
   if(!projectId||!clientEmail||!privateKey) fail('A agenda ainda não está conectada ao banco de dados.',503);
+  if(!privateKey.startsWith('-----BEGIN PRIVATE KEY-----')||!privateKey.includes('-----END PRIVATE KEY-----')) fail('A credencial do banco de dados precisa ser revisada.',503);
   if(!getApps().length) initializeApp({credential:cert({projectId,clientEmail,privateKey})});
   return getFirestore();
 }

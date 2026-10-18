@@ -17,9 +17,14 @@ const bool=(value:unknown,message='Confira as confirmações obrigatórias.')=>{
 function privateKeyFromEnvironment(raw:string|undefined){
   let key=raw?.trim();
   // Netlify stores environment values as strings. Accept both the raw PEM value
-  // and the JSON-string form commonly copied from a service-account file.
-  if(key?.startsWith('"')&&key.endsWith('"')){
-    try { const parsed=JSON.parse(key); if(typeof parsed==='string') key=parsed; } catch { /* validated below */ }
+  // and JSON copied from a service-account file or from its private_key line.
+  try {
+    const parsed=key&&JSON.parse(key);
+    if(typeof parsed==='string') key=parsed;
+    else if(parsed&&typeof parsed.private_key==='string') key=parsed.private_key;
+  } catch {
+    const value=key?.match(/(?:^|[,{]\s*)["']?private_key["']?\s*:\s*("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/s)?.[1];
+    if(value) try { key=JSON.parse(value.replace(/^'/,'"').replace(/'$/,'"')); } catch { /* validated below */ }
   }
   return key?.replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n');
 }

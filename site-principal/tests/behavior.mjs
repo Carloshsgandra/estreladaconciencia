@@ -1,0 +1,47 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { build } from 'esbuild';
+import { rm } from 'node:fs/promises';
+import { initializeApp } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+import { defaults, addDays, today, instant } from '../lib/domain.js';
+const artifact=new URL('../node_modules/.iec-test-api.mjs',import.meta.url);
+await build({entryPoints:[new URL('../netlify/functions/api.mts',import.meta.url).pathname],outfile:artifact.pathname,bundle:true,platform:'node',format:'esm',packages:'external'});
+const api=await import(artifact.href);
+const fixture=()=>Object.assign(Object.fromEntries(['physicalDiagnosisDetails','currentTreatments','allergies','pregnancyDetails','mentalDiagnosisDetails','crisisHistoryDetails','professionalCareDetails','recentGriefDetails','emotionalVulnerabilityDetails','currentMedicationDetails','recentAlcoholDetails','recentSubstancesDetails','compatibilityQuestions','priorExperienceDetails','concerns','needs','importantInformation'].map(k=>[k,''])),Object.fromEntries(['physicalDiagnosis','pregnancy','mentalDiagnosis','crisisHistory','professionalCare','recentGrief','emotionalVulnerability','currentMedication','recentAlcohol','recentSubstances','priorExperience'].map(k=>[k,'nao'])),{fullName:'Pessoa Teste',birthDate:'1990-01-01',phone:'11999999999',emergencyContact:'Contato Teste',emergencyPhone:'11988888888',relationship:'Familiar',conditions:['nenhuma'],motivation:'Teste isolado',signature:'Pessoa Teste',truthConsent:true,changeConsent:true,evaluationConsent:true,generalConsent:true,healthDataConsent:true});
+const user={userId:'test-person',email:'test@example.invalid',confirmed:true};
+test('consentimentos, assinatura, enums, detalhes e email autenticado',()=>{
+ assert.equal(api.validateAnamnesis({...fixture(),email:'forged@example.invalid'},user).email,user.email);
+ for(const patch of [{healthDataConsent:false},{signature:'Outra pessoa'},{physicalDiagnosis:'sim'},{conditions:['nenhuma','diabetes']},{medicationClasses:['inventada']},{birthDate:today()},{recentAlcohol:'sim'}])assert.throws(()=>api.validateAnamnesis({...fixture(),...patch},user));
+ assert.equal(api.validateAnamnesis({...fixture(),currentMedication:'sim',currentMedicationDetails:'Nome dose frequência de teste'},user).medicationDetails,'Nome dose frequência de teste');
+});
+test('notas internas não chegam ao participante',()=>{assert.equal(api.visibleBooking({internal:{notes:'privado'},anamnesis:fixture()},false).internal,undefined);});
+test('contexto assinado da Identity aceita o identificador sub',()=>{assert.deepEqual(api.actor({sub:'identity-user',email:'IDENTITY@example.invalid',user_metadata:{full_name:'Pessoa'} }),{userId:'identity-user',email:'identity@example.invalid',displayName:'Pessoa',confirmed:true});});
+test('ponte sem segredo válido retorna JSON 403',async()=>{process.env.ADMIN_BRIDGE_SECRET='test-only-secret';const res=await api.default(new Request('https://example.invalid/api/bridge',{headers:{'X-Admin-Bridge':'wrong'}}),{});assert.equal(res.status,403);assert.match(res.headers.get('content-type'),/application\/json/);delete process.env.ADMIN_BRIDGE_SECRET;});
+test('Firestore: concorrência, cancelamento, duplicidade, propriedade e histórico',{skip:!process.env.FIRESTORE_EMULATOR_HOST},async()=>{
+ assert.match(process.env.FIRESTORE_EMULATOR_HOST,/^(127\.0\.0\.1|localhost):/);
+ const db=getFirestore(initializeApp({projectId:'demo-estrela-validation'},'tests-'+Date.now()));
+ const id=crypto.randomUUID(),ref=db.collection('configuration').doc('ceremony_'+id),date=addDays(today(),10),c={kind:'ceremony',date,time:'14:00',startAt:instant(date,'14:00'),capacity:1,open:true,version:0};await ref.create(c);
+ const book=u=>api.createCeremonyBooking(db,{ceremonyId:id,anamnesis:fixture()},u),users=[{...user,userId:'a'},{...user,userId:'b'}];
+ const attempts=await Promise.allSettled(users.map(book));assert.equal(attempts.filter(x=>x.status==='fulfilled').length,1);assert.equal(attempts.find(x=>x.status==='rejected').reason.status,409);
+ const docs=await db.collection('bookings').where('ceremonyId','==',id).get(),doc=docs.docs[0],owner=users.find(u=>u.userId===doc.data().userId);await assert.rejects(book(owner),e=>e.status===409);
+ await assert.rejects(api.updateBooking(db,{appointment:{id:doc.id,status:'cancelado'},version:0},{...user,userId:'stranger'},false,defaults()),e=>e.status===404);
+ await api.updateBooking(db,{appointment:{id:doc.id,status:'cancelado'},version:0},owner,false,defaults());assert.equal((await db.doc('ceremonySeats/'+id+'_1').get()).exists,false);
+ await book({...user,userId:'replacement'});await assert.rejects(api.updateBooking(db,{appointment:{id:doc.id,status:'confirmado'},version:1},null,true,defaults()),e=>e.status===409);await assert.rejects(api.ceremonyAdmin(db,{type:'ceremony:delete',ceremonyId:id,version:0}),e=>e.status===409);
+ const seats=await db.collection('ceremonySeats').where('ceremonyId','==',id).get();assert.equal(seats.size,1);assert.equal(seats.docs[0].data().anamnesis,undefined);
+ await ref.update({open:false});await assert.rejects(book({...user,userId:'closed'}),e=>e.status===409);await ref.update({open:true,startAt:Date.now()-1000});await assert.rejects(book({...user,userId:'past'}),e=>e.status===409);await db.terminate();
+});
+test('Firestore: Tarô e Reiki preservam exclusão mútua e liberação de horários',{skip:!process.env.FIRESTORE_EMULATOR_HOST},async()=>{
+ const db=getFirestore(initializeApp({projectId:'demo-estrela-validation'},'slots-'+Date.now()));
+ const config=defaults();config.settings.week.forEach(w=>w.on=true);await db.collection('configuration').doc('main').set({version:0});
+ const date=addDays(today(),12),owner={...user,userId:'slots-'+crypto.randomUUID()},ids=[crypto.randomUUID(),crypto.randomUUID()];
+ const booking=(id,service)=>({type:'create',consent:true,appointment:{id,service,date,time:'10:00',mode:'online',name:'Pessoa Teste',phone:'11999999999',topic:'Teste',intention:''}});
+ const results=await Promise.allSettled(ids.map((id,i)=>api.createNormal(db,booking(id,i?'mentoria':'avulsa'),owner,false,config)));
+ assert.equal(results.filter(r=>r.status==='fulfilled').length,1);assert.equal(results.find(r=>r.status==='rejected').reason.status,409);
+ const id=ids[results.findIndex(r=>r.status==='fulfilled')],doc=(await db.collection('bookings').doc(id).get()).data();assert.equal(doc.slotIds.length,4);
+ await api.updateBooking(db,{appointment:{...doc,id,status:'cancelado'},version:0},owner,false,config);
+ for(const slot of doc.slotIds)assert.equal((await db.collection('bookingSlots').doc(slot).get()).exists,false);
+ await api.createNormal(db,booking(crypto.randomUUID(),'mentoria'),owner,false,config);
+ const slot=(await db.collection('bookingSlots').doc(doc.slotIds[0]).get()).data();assert.equal(slot.anamnesis,undefined);await db.terminate();
+});
+test.after(()=>rm(artifact,{force:true}));

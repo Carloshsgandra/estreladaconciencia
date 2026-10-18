@@ -27,6 +27,8 @@ export default async function handler(request: Request, _context: Context) {
     const mainUrl = process.env.MAIN_SITE_URL;
     const bridgeSecret = process.env.ADMIN_BRIDGE_SECRET;
     if (!mainUrl || !bridgeSecret) return response({ error:'Conexão com a agenda não configurada.' },503);
+    const target=new URL(mainUrl);
+    if(target.protocol!=='https:'||target.username||target.password)return response({error:'URL da agenda inválida.'},503);
     const body = request.method === 'POST' ? await request.text() : undefined;
     if (body && new TextEncoder().encode(body).byteLength > 65536) return response({ error:'Conteúdo maior que o permitido.' },413);
     const upstream = await fetch(new URL('/api/bridge',mainUrl),{
@@ -38,7 +40,7 @@ export default async function handler(request: Request, _context: Context) {
     });
     if (!upstream.headers.get('content-type')?.includes('application/json')) return response({ error:'A agenda não respondeu. Tente novamente em instantes.' },502);
     const data: any = await upstream.json();
-    if (upstream.ok) data.user = { name:user.user_metadata?.full_name || user.email, email:user.email };
+    if (upstream.ok) data.user = { name:user.name || user.userMetadata?.full_name || user.email, email:user.email };
     return response(data,upstream.status);
   } catch (error: any) {
     console.error('Admin proxy failed',error?.name);

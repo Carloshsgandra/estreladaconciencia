@@ -6,3 +6,6 @@ firebase-key*.json
 node_modules/
 dist-netlify/
 .netlify/
+
+# Firebase CLI and emulator diagnostics may contain sensitive metadata.
+*-debug.log

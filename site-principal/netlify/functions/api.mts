@@ -1,6 +1,5 @@
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
-import { getUser } from '@netlify/identity';
 import type { Context } from '@netlify/functions';
 import { defaults, validDate, validTime, instant, today, addDays, dateObj, minutes, safeVideo } from '../../lib/domain.js';
 
@@ -39,8 +38,11 @@ function allowedOrigin(req:Request,admin:boolean){
 }
 
 function actor(raw:any){
-  if(!raw?.id||!raw?.email)return null;
-  return { userId:String(raw.id), email:String(raw.email).toLowerCase(), displayName:String(raw.user_metadata?.full_name||raw.email), confirmed:Boolean(raw.confirmedAt||raw.confirmed_at||raw.email_confirmed_at) };
+  const id=raw?.id||raw?.sub;
+  if(!id||!raw?.email)return null;
+  // Netlify Functions exposes signed Identity JWT claims in clientContext.user. A valid
+  // Identity session represents a confirmed account when confirmation is required.
+  return { userId:String(id), email:String(raw.email).toLowerCase(), displayName:String(raw.name||raw.userMetadata?.full_name||raw.user_metadata?.full_name||raw.email), confirmed:Boolean(raw.confirmedAt||raw.confirmed_at||raw.email_confirmed_at||raw.sub) };
 }
 
 async function rateLimit(db:any,key:string){
@@ -59,10 +61,12 @@ function visibleBooking(data:any,admin:boolean){
 async function loadConfiguration(db:any){
   const ref=db.collection('configuration').doc('main'); let snap=await ref.get();
   if(!snap.exists){
-    const d=defaults(),batch=db.batch();
+    const d=defaults();
+    await db.runTransaction(async (batch:any)=>{
+    if((await batch.get(ref)).exists)return;
     batch.create(ref,{services:d.services,settings:d.settings,version:0,kind:'main',createdAt:Date.now()});
     for(const name of ['bookings','bookingSlots','ceremonySeats','activeBookings','audit','rateLimits'])batch.set(db.collection(name).doc('__schema__'),{meta:true,schemaVersion:1});
-    await batch.commit(); snap=await ref.get();
+    }); snap=await ref.get();
   }
   let data=snap.data();
   if(Number(data.settings?.catalogVersion||0)<3){
@@ -77,7 +81,7 @@ async function loadConfiguration(db:any){
 
 async function listCeremonies(db:any,admin:boolean){
   const query=await db.collection('configuration').where('kind','==','ceremony').orderBy('startAt','asc').get(); const rows=[];
-  for(const doc of query.docs){ const c=doc.data(); if(!admin&&c.startAt<=Date.now())continue; const seats=await db.collection('ceremonySeats').where('ceremonyId','==',doc.id.slice(9)).get(); rows.push({id:doc.id.slice(9),date:c.date,time:c.time,capacity:c.capacity,open:Boolean(c.open),startAt:c.startAt,version:Number(c.version||0),remaining:Math.max(0,c.capacity-seats.size)}); }
+  for(const doc of query.docs){ const c=doc.data(); if(!admin&&c.startAt<=Date.now())continue; const seats=await db.collection('ceremonySeats').where('ceremonyId','==',doc.id.slice(9)).get(); rows.push({id:doc.id.slice(9),date:c.date,time:c.time,capacity:c.capacity,open:Boolean(c.open),startAt:c.startAt,version:Number(c.version||0),hasRegistrations:admin?!(await db.collection('bookings').where('ceremonyId','==',doc.id.slice(9)).limit(1).get()).empty:undefined,remaining:Math.max(0,c.capacity-seats.size)}); }
   return rows;
 }
 
@@ -99,9 +103,15 @@ function validateSlot(config:any,appointment:any,duration:number){
   return start;
 }
 
+function validateMedicationClasses(value:any){
+  const allowed=['Antidepressivos','Estabilizadores de humor','Estimulantes','Medicamentos para dormir','Substâncias que atuam no sistema nervoso'];
+  if(value===undefined)return [];
+  if(!Array.isArray(value)||value.length>allowed.length||value.some(v=>!allowed.includes(v))||new Set(value).size!==value.length)fail('Classes de medicamentos inválidas.');
+  return value;
+}
 function validateAnamnesis(value:any,identity:any){
   if(!value||typeof value!=='object'||Array.isArray(value))fail('Preencha a ficha de anamnese.');
-  const yesNo=(v:unknown)=>{ if(!['sim','nao'].includes(String(v)))fail('Responda todos os campos obrigatórios.'); return String(v); };
+  const yesNo=(v:unknown)=>{ if(typeof v!=='string'||!['sim','nao'].includes(v))fail('Responda todos os campos obrigatórios.'); return String(v); };
   const details=(answer:string,v:unknown,max=2000)=>clean(v,max,answer==='sim'); const fullName=clean(value.fullName,120,true);
   if(!validDate(value.birthDate)||value.birthDate>=today())fail('Informe uma data de nascimento válida.');
   const conditions=Array.isArray(value.conditions)?value.conditions.map((x:unknown)=>clean(x,60,true)):fail('Selecione as condições de saúde aplicáveis.');
@@ -110,7 +120,7 @@ function validateAnamnesis(value:any,identity:any){
   const physicalDiagnosis=yesNo(value.physicalDiagnosis),mentalDiagnosis=yesNo(value.mentalDiagnosis),crisisHistory=yesNo(value.crisisHistory),professionalCare=yesNo(value.professionalCare),emotionalVulnerability=yesNo(value.emotionalVulnerability),currentMedication=yesNo(value.currentMedication),recentSubstances=yesNo(value.recentSubstances),priorExperience=yesNo(value.priorExperience);
   if(fullName.toLocaleLowerCase('pt-BR')!==clean(value.signature,120,true).toLocaleLowerCase('pt-BR'))fail('A assinatura digitada deve corresponder ao nome completo.');
   bool(value.truthConsent); bool(value.changeConsent); bool(value.evaluationConsent); bool(value.generalConsent); bool(value.healthDataConsent,'É necessário consentir explicitamente com o tratamento dos dados sensíveis de saúde.');
-  return {fullName,birthDate:value.birthDate,phone:phone(value.phone),email:identity.email,emergencyContact:clean(value.emergencyContact,120,true),emergencyPhone:phone(value.emergencyPhone),relationship:clean(value.relationship,80,true),physicalDiagnosis,physicalDiagnosisDetails:details(physicalDiagnosis,value.physicalDiagnosisDetails),conditions,otherCondition:conditions.includes('outra')?clean(value.otherCondition,500,true):'',currentTreatments:clean(value.currentTreatments,2000),allergies:clean(value.allergies,1000),pregnancy:yesNo(value.pregnancy),mentalDiagnosis,mentalDiagnosisDetails:details(mentalDiagnosis,value.mentalDiagnosisDetails),crisisHistory,crisisHistoryDetails:details(crisisHistory,value.crisisHistoryDetails),professionalCare,professionalCareDetails:details(professionalCare,value.professionalCareDetails),recentGrief:yesNo(value.recentGrief),emotionalVulnerability,emotionalVulnerabilityDetails:details(emotionalVulnerability,value.emotionalVulnerabilityDetails),currentMedication,medicationDetails:details(currentMedication,value.medicationDetails),medicationClasses:Array.isArray(value.medicationClasses)?value.medicationClasses.map((x:unknown)=>clean(x,80,true)).slice(0,10):[],recentAlcohol:yesNo(value.recentAlcohol),recentSubstances,substanceDetails:details(recentSubstances,value.substanceDetails),compatibilityQuestions:clean(value.compatibilityQuestions,1500),priorExperience,priorExperienceDetails:details(priorExperience,value.priorExperienceDetails),motivation:clean(value.motivation,2000,true),concerns:clean(value.concerns,1500),needs:clean(value.needs,1500),importantInformation:clean(value.importantInformation,2000),signature:clean(value.signature,120,true),truthConsent:true,changeConsent:true,evaluationConsent:true,generalConsent:true,healthDataConsent:true,submittedAt:new Date().toISOString(),schemaVersion:1};
+  return {fullName,birthDate:value.birthDate,phone:phone(value.phone),email:identity.email,emergencyContact:clean(value.emergencyContact,120,true),emergencyPhone:phone(value.emergencyPhone),relationship:clean(value.relationship,80,true),physicalDiagnosis,physicalDiagnosisDetails:details(physicalDiagnosis,value.physicalDiagnosisDetails),conditions,otherCondition:conditions.includes('outra')?clean(value.otherCondition,500,true):'',currentTreatments:clean(value.currentTreatments,2000),allergies:clean(value.allergies,1000),pregnancy:yesNo(value.pregnancy),pregnancyDetails:details(yesNo(value.pregnancy),value.pregnancyDetails),mentalDiagnosis,mentalDiagnosisDetails:details(mentalDiagnosis,value.mentalDiagnosisDetails),crisisHistory,crisisHistoryDetails:details(crisisHistory,value.crisisHistoryDetails),professionalCare,professionalCareDetails:details(professionalCare,value.professionalCareDetails),recentGrief:yesNo(value.recentGrief),recentGriefDetails:details(yesNo(value.recentGrief),value.recentGriefDetails),emotionalVulnerability,emotionalVulnerabilityDetails:details(emotionalVulnerability,value.emotionalVulnerabilityDetails),currentMedication,medicationDetails:details(currentMedication,value.currentMedicationDetails??value.medicationDetails),medicationClasses:validateMedicationClasses(value.medicationClasses),recentAlcohol:yesNo(value.recentAlcohol),recentAlcoholDetails:details(yesNo(value.recentAlcohol),value.recentAlcoholDetails),recentSubstances,substanceDetails:details(recentSubstances,value.recentSubstancesDetails??value.substanceDetails),compatibilityQuestions:clean(value.compatibilityQuestions,1500),priorExperience,priorExperienceDetails:details(priorExperience,value.priorExperienceDetails),motivation:clean(value.motivation,2000,true),concerns:clean(value.concerns,1500),needs:clean(value.needs,1500),importantInformation:clean(value.importantInformation,2000),signature:clean(value.signature,120,true),truthConsent:true,changeConsent:true,evaluationConsent:true,generalConsent:true,healthDataConsent:true,submittedAt:new Date().toISOString(),schemaVersion:1};
 }
 
 async function createNormal(db:any,body:any,user:any,admin:boolean,config:any){
@@ -119,7 +129,7 @@ async function createNormal(db:any,body:any,user:any,admin:boolean,config:any){
   const start=validateSlot(config,v,service.duration),owner=admin?`manual:${crypto.randomUUID()}`:user.userId;
   const appointment={service:service.id,title:service.title,duration:service.duration,price:service.price,date:v.date,time:v.time,mode:v.mode,name:clean(v.name,100,true),email:admin?email(v.email):user.email,phone:phone(v.phone),topic:clean(v.topic,100,true),intention:clean(v.intention||'',1500),status:'pendente',created:new Date().toISOString(),createdAt:Date.now(),startAt:start,endAt:start+service.duration*60000,userId:owner,notes:'',cards:'',video:'',location:v.mode==='presencial'?config.settings.address:'',version:0,type:'appointment'};
   const bookingRef=db.collection('bookings').doc(v.id),slotIds=[];for(let at=start;at<appointment.endAt;at+=15*60000){const d=new Date(at),parts=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',hour:'2-digit',minute:'2-digit',hour12:false}).format(d).replace(':','');slotIds.push(`${v.date}_${parts}`);}appointment.slotIds=slotIds;
-  await db.runTransaction(async(tx:any)=>{const booking=await tx.get(bookingRef),slotRefs=slotIds.map(id=>db.collection('bookingSlots').doc(id)),slots=await Promise.all(slotRefs.map((ref:any)=>tx.get(ref)));if(booking.exists)fail('Reserva já existente.',409);if(slots.some((slot:any)=>slot.exists))fail('Este horário acabou de ser reservado.',409);tx.create(bookingRef,appointment);slotRefs.forEach((ref:any,index:number)=>tx.create(ref,{bookingId:v.id,date:v.date,time:v.time,slot:slotIds[index],startAt:start,endAt:appointment.endAt}));tx.set(db.collection('activeBookings').doc(`slot_${v.id}`),{bookingId:v.id,userId:owner,type:'appointment'});await audit(tx,db,admin?'administrator':owner,'create',v.id);});
+  await db.runTransaction(async(tx:any)=>{const configSnap=await tx.get(db.collection('configuration').doc('main'));if(Number(configSnap.data()?.version||0)!==config.rev)fail('A disponibilidade mudou. Atualize a página.',409);const booking=await tx.get(bookingRef),slotRefs=slotIds.map(id=>db.collection('bookingSlots').doc(id)),slots=await Promise.all(slotRefs.map((ref:any)=>tx.get(ref)));if(booking.exists)fail('Reserva já existente.',409);if(slots.some((slot:any)=>slot.exists))fail('Este horário acabou de ser reservado.',409);tx.create(bookingRef,appointment);slotRefs.forEach((ref:any,index:number)=>tx.create(ref,{bookingId:v.id,date:v.date,time:v.time,slot:slotIds[index],startAt:start,endAt:appointment.endAt}));tx.set(db.collection('activeBookings').doc(`slot_${v.id}`),{bookingId:v.id,userId:owner,type:'appointment'});await audit(tx,db,admin?'administrator':owner,'create',v.id);});
 }
 
 async function createCeremonyBooking(db:any,body:any,user:any){
@@ -137,8 +147,14 @@ async function updateBooking(db:any,body:any,user:any,admin:boolean,config:any){
     const old=snap.data();
     if(!admin&&old.userId!==user.userId)fail('Consulta não encontrada.',404);
     if(Number(body.version)!==Number(old.version||0))fail('Esta reserva mudou em outra sessão. Atualize a página.',409);
+    const currentConfig=await tx.get(db.collection('configuration').doc('main'));
+    if(Number(currentConfig.data()?.version||0)!==config.rev)fail('A disponibilidade mudou. Atualize a página.',409);
     const next={...old};
+    if(!ACTIVE.has(old.status)&&v.status!==old.status)fail('Esta reserva já foi encerrada. Faça uma nova inscrição.',409);
     if(old.type==='ceremony'){
+      if((v.ceremonyId&&v.ceremonyId!==old.ceremonyId)||(v.date&&v.date!==old.date)||(v.time&&v.time!==old.time))fail('Para trocar a cerimônia, cancele e faça uma nova inscrição.',409);
+      if(v.status==='concluido'&&old.endAt>Date.now())fail('A cerimônia só pode ser concluída após o término.',409);
+      if(v.status==='recusado'&&old.status!=='pendente')fail('Só inscrições pendentes podem ser recusadas.',409);
       if(!admin){
         if(v.status!=='cancelado'||!ACTIVE.has(old.status))fail('Alteração não permitida.',403);
         next.status='cancelado';
@@ -151,12 +167,13 @@ async function updateBooking(db:any,body:any,user:any,admin:boolean,config:any){
           if(next.internal.evaluationDate&&!validDate(next.internal.evaluationDate))fail('Data de avaliação inválida.');
         }
       }
-      if(!ACTIVE.has(next.status)){
+      if(ACTIVE.has(old.status)&&!ACTIVE.has(next.status)){
         tx.delete(db.collection('ceremonySeats').doc(`${old.ceremonyId}_${old.seatNumber}`));
         tx.delete(db.collection('activeBookings').doc(`${old.userId}_${old.ceremonyId}`));
       }
     }else{
       const moved=v.date!==old.date||v.time!==old.time;
+      if(!admin&&moved&&v.status!=='pendente')fail('Alteração não permitida.',403);
       if(!admin&&old.startAt-Date.now()<config.settings.lead*3600000)fail('O prazo de alteração terminou. Fale com o instituto.');
       if(moved){
         if(!ACTIVE.has(old.status))fail('Esta consulta não pode ser remarcada.');
@@ -173,10 +190,14 @@ async function updateBooking(db:any,body:any,user:any,admin:boolean,config:any){
         next.status='cancelado';
       }else{
         if(!STATUSES.has(v.status))fail('Situação inválida.');
+        if(v.status==='concluido'&&old.endAt>Date.now())fail('A consulta só pode ser concluída após o término.',409);
+        if(v.status==='recusado'&&old.status!=='pendente')fail('Só solicitações pendentes podem ser recusadas.',409);
         next.status=v.status;next.notes=clean(v.notes||'',5000);next.cards=clean(v.cards||'',300);next.video=clean(v.video||'',2048);next.location=clean(v.location||'',400);next.reason=clean(v.reason||'',500);
         if(!safeVideo(next.video))fail('O link de vídeo deve começar com https://.');
+        if(next.status==='confirmado'&&(next.mode==='online'?!next.video:!next.location))fail('Informe o link ou endereço antes de confirmar.');
+        if(next.status==='recusado'&&!next.reason)fail('Informe o motivo da recusa.');
       }
-      if(!ACTIVE.has(next.status)){
+      if(ACTIVE.has(old.status)&&!ACTIVE.has(next.status)){
         (old.slotIds||[`${old.date}_${old.time.replace(':','')}`]).forEach((id:string)=>tx.delete(db.collection('bookingSlots').doc(id)));
         tx.delete(db.collection('activeBookings').doc(`slot_${v.id}`));
       }
@@ -189,7 +210,7 @@ async function updateBooking(db:any,body:any,user:any,admin:boolean,config:any){
 
 async function ceremonyAdmin(db:any,body:any){
   if(body.type==='ceremony:create'){if(!validDate(body.date)||!validTime(body.time)||instant(body.date,body.time)<=Date.now())fail('Data ou horário inválido.');const capacity=Number(body.capacity);if(!Number.isInteger(capacity)||capacity<1||capacity>500)fail('A capacidade deve ficar entre 1 e 500.');const id=crypto.randomUUID();await db.collection('configuration').doc(`ceremony_${id}`).create({kind:'ceremony',date:body.date,time:body.time,startAt:instant(body.date,body.time),capacity,open:true,version:0,createdAt:Date.now()});return;}
-  const id=clean(body.ceremonyId,100,true);if(!/^[a-zA-Z0-9_-]+$/.test(id))fail('Cerimônia inválida.');const ref=db.collection('configuration').doc(`ceremony_${id}`);await db.runTransaction(async(tx:any)=>{const snap=await tx.get(ref);if(!snap.exists)fail('Cerimônia não encontrada.',404);const c=snap.data();if(Number(body.version)!==Number(c.version||0))fail('A cerimônia mudou em outra sessão.',409);if(body.type==='ceremony:toggle'){if(typeof body.open!=='boolean')fail('Situação inválida.');tx.update(ref,{open:body.open,version:Number(c.version||0)+1});return;}if(body.type==='ceremony:delete'){const seats=await tx.get(db.collection('ceremonySeats').where('ceremonyId','==',id));if(!seats.empty)fail('Cerimônias com inscrições não podem ser excluídas.',409);tx.delete(ref);return;}fail('Operação não reconhecida.');});
+  const id=clean(body.ceremonyId,100,true);if(!/^[a-zA-Z0-9_-]+$/.test(id))fail('Cerimônia inválida.');const ref=db.collection('configuration').doc(`ceremony_${id}`);await db.runTransaction(async(tx:any)=>{const snap=await tx.get(ref);if(!snap.exists)fail('Cerimônia não encontrada.',404);const c=snap.data();if(Number(body.version)!==Number(c.version||0))fail('A cerimônia mudou em outra sessão.',409);if(body.type==='ceremony:toggle'){if(typeof body.open!=='boolean')fail('Situação inválida.');if(body.open&&c.startAt<=Date.now())fail('Esta cerimônia já ocorreu.',409);tx.update(ref,{open:body.open,version:Number(c.version||0)+1});return;}if(body.type==='ceremony:delete'){const seats=await tx.get(db.collection('bookings').where('ceremonyId','==',id).limit(1));if(!seats.empty)fail('Cerimônias com inscrições não podem ser excluídas.',409);tx.delete(ref);return;}fail('Operação não reconhecida.');});
 }
 
 async function configure(db:any,body:any,config:any){
@@ -200,7 +221,10 @@ async function action(db:any,body:any,admin:boolean,user:any){
   const config=await loadConfiguration(db);await rateLimit(db,admin?'administrator':user.userId);if(body.type==='config'){if(!admin)fail('Acesso administrativo necessário.',403);return configure(db,body,config);}if(body.type==='create')return createNormal(db,body,user,admin,config);if(body.type==='ceremony:book'){if(admin)fail('Use uma conta de participante.',403);return createCeremonyBooking(db,body,user);}if(body.type==='update')return updateBooking(db,body,user,admin,config);if(String(body.type).startsWith('ceremony:')){if(!admin)fail('Acesso administrativo necessário.',403);return ceremonyAdmin(db,body);}fail('Operação não reconhecida.');
 }
 
-export default async function handler(req:Request,_context:Context){
-  try{const secret=process.env.ADMIN_BRIDGE_SECRET||'',provided=req.headers.get('X-Admin-Bridge')||'',admin=Boolean(secret&&provided&&await constantEqual(provided,secret));if(provided&&!admin)fail('Acesso administrativo não autorizado.',403);const raw=admin?null:await getUser(),user=actor(raw);if(req.method==='GET')return response(await state(database(),admin,user));if(req.method!=='POST')fail('Método não permitido.',405);allowedOrigin(req,admin);if(!admin&&!user)fail('Entre na sua conta para continuar.',401);if(!admin&&!user.confirmed)fail('Confirme seu e-mail antes de continuar.',403);if(!req.headers.get('content-type')?.toLowerCase().startsWith('application/json'))fail('Formato não permitido.',415);const rawBody=await req.text();if(new TextEncoder().encode(rawBody).byteLength>65536)fail('Conteúdo maior que o permitido.',413);let body:any;try{body=JSON.parse(rawBody);}catch{fail('Não foi possível ler a solicitação.');}if(!body||typeof body!=='object'||Array.isArray(body))fail('Solicitação inválida.');const db=database();await action(db,body,admin,user);return response(await state(db,admin,user));}
+export default async function handler(req:Request,context:Context){
+  try{const secret=process.env.ADMIN_BRIDGE_SECRET||'',provided=req.headers.get('X-Admin-Bridge')||'',admin=Boolean(secret&&provided&&await constantEqual(provided,secret));if(provided&&!admin)fail('Acesso administrativo não autorizado.',403);const raw=admin?null:context.clientContext?.user,user=actor(raw);if(admin)allowedOrigin(req,true);if(req.method==='GET')return response(await state(database(),admin,user));if(req.method!=='POST')fail('Método não permitido.',405);allowedOrigin(req,admin);if(!admin&&!user)fail('Entre na sua conta para continuar.',401);if(!admin&&!user.confirmed)fail('Confirme seu e-mail antes de continuar.',403);if(!req.headers.get('content-type')?.toLowerCase().startsWith('application/json'))fail('Formato não permitido.',415);const rawBody=await req.text();if(new TextEncoder().encode(rawBody).byteLength>65536)fail('Conteúdo maior que o permitido.',413);let body:any;try{body=JSON.parse(rawBody);}catch{fail('Não foi possível ler a solicitação.');}if(!body||typeof body!=='object'||Array.isArray(body))fail('Solicitação inválida.');const db=database();await action(db,body,admin,user);return response(await state(db,admin,user));}
   catch(error:any){if(error instanceof ApiError)return response({error:error.message},error.status);console.error('API operation failed',error?.name,error?.code);return response({error:'Não foi possível concluir. Tente novamente em instantes.'},500);}
 }
+
+// Named exports support isolated tests; only the default handler is routed by Netlify.
+export { actor, validateAnamnesis, createCeremonyBooking, createNormal, updateBooking, ceremonyAdmin, visibleBooking, state };

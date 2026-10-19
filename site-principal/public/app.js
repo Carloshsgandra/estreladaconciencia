@@ -1,4 +1,4 @@
-const IS_ADMIN=false;const ADMIN_URL='https://estreladaconciencia-admin.carloshsgandracode.chatgpt.site';
+let IS_ADMIN=false;const ADMIN_URL='/#home';
 
 'use strict';
 /* API-backed interface: the server owns authorization, pricing, availability and persistence. */
@@ -47,9 +47,11 @@ async function requestApi(path, options = {}) {
   throw error;
  } finally { clearTimeout(timer); }
 }
-async function fetchState(){const data=await requestApi('/api/state');memory=data;return data}
+async function fetchState(){if(typeof window==='undefined'||!window.iecApi){const data=await requestApi('/api/state');memory=data;return data}const data=window.iecApi.snapshot();memory=data;return data}
 async function transact(fn){
- const current=structuredClone(memory),next=structuredClone(current),result=fn(next);let body;
+ const current=structuredClone(memory),next=structuredClone(current),result=fn(next);
+ if(typeof window!=='undefined'&&window.iecApi){try{await window.iecApi.aplicarMutacaoLegada(current,next);return result}catch(error){if(error.status===409)try{await fetchState()}catch{}throw error}}
+ let body;
  const added=next.appointments.filter(x=>!current.appointments.some(y=>y.id===x.id));
  const changed=next.appointments.filter(x=>{const old=current.appointments.find(y=>y.id===x.id);return old&&JSON.stringify(old)!==JSON.stringify(x)});
  if(added.length===1)body={type:'create',appointment:added[0],consent:booking.consent};
@@ -150,6 +152,5 @@ function render(){const hash=(location.hash||(IS_ADMIN?'#admin':'#home')).slice(
 window.addEventListener('hashchange',()=>{const hash=location.hash.slice(1);if(hash.startsWith('book')){const id=hash.split('/')[1];if(id&&read().services.some(s=>s.id===id&&s.active))booking={...booking,service:id,step:0,date:'',time:'',done:null};else if(booking.done)booking={...booking,step:0,date:'',time:'',done:null}}$('#navigation').classList.remove('open');$('#menu').setAttribute('aria-expanded','false');render();if(!['#services','#about','#how','#faq'].includes(location.hash))$('#main').focus({preventScroll:true})});
 
 $('#menu').onclick=()=>{const open=$('#navigation').classList.toggle('open');$('#menu').setAttribute('aria-expanded',String(open))};document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('#navigation').classList.remove('open');$('#menu').setAttribute('aria-expanded','false')}});$('#dialog').addEventListener('click',e=>{if(e.target===$('#dialog')){const rect=e.target.getBoundingClientRect();if(e.clientX<rect.left||e.clientX>rect.right||e.clientY<rect.top||e.clientY>rect.bottom)e.target.close()}});
-if(location.hash.startsWith('#book/')){const id=location.hash.split('/')[1];if(read().services.some(s=>s.id===id))booking.service=id}async function initialize(){try{await fetchState();if(memory.user&&!IS_ADMIN){booking.customer.name=memory.user.name||'';booking.customer.email=memory.user.email;clientEmail=memory.user.email.toLowerCase()}render()}catch(e){$('#main').innerHTML='<section class="wrap section"><h1>Uma pausa na conexão.</h1><p>'+esc(e.message)+'</p><button class="btn" id="retry-load">Tentar novamente</button></section>';$('#retry-load').onclick=initialize}}
-initialize();
-window.addEventListener('focus',()=>fetchState().catch(()=>{}));
+if(location.hash.startsWith('#book/')){const id=location.hash.split('/')[1];if(read().services.some(s=>s.id===id))booking.service=id}let unsubscribeFirebase;async function initialize(){try{await fetchState();IS_ADMIN=Boolean(memory.admin);if(memory.user&&!IS_ADMIN){booking.customer.name=memory.user.name||'';booking.customer.email=memory.user.email;clientEmail=memory.user.email.toLowerCase()}render();unsubscribeFirebase?.();unsubscribeFirebase=window.iecApi.subscribe(data=>{memory=data;IS_ADMIN=Boolean(data.admin);render()})}catch(e){$('#main').innerHTML='<section class="wrap section"><h1>Uma pausa na conexão.</h1><p>'+esc(e.message)+'</p><button class="btn" id="retry-load">Tentar novamente</button></section>';$('#retry-load').onclick=initialize}}
+window.addEventListener('iec-firebase-ready',initialize,{once:true});if(window.iecApi)initialize();

@@ -1,12 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { build } from 'esbuild';
+import { fileURLToPath } from 'node:url';
 import { rm } from 'node:fs/promises';
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { defaults, addDays, today, instant } from '../lib/domain.js';
 const artifact=new URL('../node_modules/.iec-test-api.mjs',import.meta.url);
-await build({entryPoints:[new URL('../netlify/functions/api.mts',import.meta.url).pathname],outfile:artifact.pathname,bundle:true,platform:'node',format:'esm',packages:'external'});
+await build({entryPoints:[fileURLToPath(new URL('../netlify/functions/api.mts',import.meta.url))],outfile:fileURLToPath(artifact),bundle:true,platform:'node',format:'esm',packages:'external'});
 const api=await import(artifact.href);
 const fixture=()=>Object.assign(Object.fromEntries(['physicalDiagnosisDetails','currentTreatments','allergies','pregnancyDetails','mentalDiagnosisDetails','crisisHistoryDetails','professionalCareDetails','recentGriefDetails','emotionalVulnerabilityDetails','currentMedicationDetails','recentAlcoholDetails','recentSubstancesDetails','compatibilityQuestions','priorExperienceDetails','concerns','needs','importantInformation'].map(k=>[k,''])),Object.fromEntries(['physicalDiagnosis','pregnancy','mentalDiagnosis','crisisHistory','professionalCare','recentGrief','emotionalVulnerability','currentMedication','recentAlcohol','recentSubstances','priorExperience'].map(k=>[k,'nao'])),{fullName:'Pessoa Teste',birthDate:'1990-01-01',phone:'11999999999',emergencyContact:'Contato Teste',emergencyPhone:'11988888888',relationship:'Familiar',conditions:['nenhuma'],motivation:'Teste isolado',signature:'Pessoa Teste',truthConsent:true,changeConsent:true,evaluationConsent:true,generalConsent:true,healthDataConsent:true});
 const user={userId:'test-person',email:'test@example.invalid',confirmed:true};

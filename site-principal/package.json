@@ -15,7 +15,6 @@
   "dependencies": {
     "@netlify/functions": "^5.0.0",
     "@netlify/identity": "^1.0.0",
-    "firebase": "^11.10.0",
     "firebase-admin": "^14.5.0"
   },
   "devDependencies": {

@@ -1,35 +1,27 @@
 {
   "indexes": [
     {
-      "collectionGroup": "agendamentos",
+      "collectionGroup": "bookings",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "clienteUid", "order": "ASCENDING" },
-        { "fieldPath": "inicioEm", "order": "DESCENDING" }
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     },
     {
-      "collectionGroup": "agendamentos",
+      "collectionGroup": "bookings",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "status", "order": "ASCENDING" },
-        { "fieldPath": "inicioEm", "order": "ASCENDING" }
+        { "fieldPath": "startAt", "order": "ASCENDING" }
       ]
     },
     {
-      "collectionGroup": "agendaSlots",
+      "collectionGroup": "configuration",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "data", "order": "ASCENDING" },
-        { "fieldPath": "horario", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "diarios",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "clienteUid", "order": "ASCENDING" },
-        { "fieldPath": "data", "order": "DESCENDING" }
+        { "fieldPath": "kind", "order": "ASCENDING" },
+        { "fieldPath": "startAt", "order": "ASCENDING" }
       ]
     }
   ],

@@ -2,27 +2,8 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() { return request.auth != null; }
-    function mine(uid) { return signedIn() && request.auth.uid == uid; }
-    function admin() { return signedIn() && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.role == 'admin'; }
-    function validClientProfile() { return request.resource.data.uid == request.auth.uid && request.resource.data.email == request.auth.token.email && request.resource.data.role == 'cliente' && request.resource.data.keys().hasOnly(['uid','nome','email','telefone','role','criadoEm','atualizadoEm']); }
-
-    match /usuarios/{uid} {
-      allow create: if mine(uid) && validClientProfile();
-      allow read: if mine(uid) || admin();
-      allow update: if mine(uid) && request.resource.data.uid == resource.data.uid && request.resource.data.email == resource.data.email && request.resource.data.role == resource.data.role && request.resource.data.role == 'cliente' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nome','telefone','atualizadoEm']);
-      allow delete: if false;
+    match /{document=**} {
+      allow read, write: if false;
     }
-    match /configuracoes/main { allow read: if signedIn(); allow write: if admin(); }
-    match /agendamentos/{id} { allow read: if admin() || (signedIn() && resource.data.clienteUid == request.auth.uid); allow write: if false; }
-    match /agendaSlots/{id} { allow read: if signedIn(); allow write: if false; }
-    match /diarios/{id} {
-      allow create: if signedIn() && request.resource.data.clienteUid == request.auth.uid && request.resource.data.keys().hasOnly(['clienteUid','agendamentoId','data','titulo','conteudo','visibilidade','versao','criadoEm','atualizadoEm']) && request.resource.data.visibilidade in ['privado','compartilhado'] && request.resource.data.versao == 1;
-      allow read: if signedIn() && (resource.data.clienteUid == request.auth.uid || (admin() && resource.data.visibilidade == 'compartilhado'));
-      allow update: if signedIn() && resource.data.clienteUid == request.auth.uid && request.resource.data.clienteUid == resource.data.clienteUid && request.resource.data.versao == resource.data.versao + 1 && request.resource.data.visibilidade in ['privado','compartilhado'];
-      allow delete: if signedIn() && resource.data.clienteUid == request.auth.uid;
-    }
-    match /auditoria/{id} { allow read: if admin(); allow write: if false; }
-    match /{document=**} { allow read, write: if false; }
   }
 }

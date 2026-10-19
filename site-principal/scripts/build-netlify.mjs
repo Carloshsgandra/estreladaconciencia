@@ -17,4 +17,3 @@ const app = (await readFile(appPath, 'utf8')).replace(
   .replaceAll('Entrar com ChatGPT →', 'Entrar na minha conta →');
 await writeFile(appPath, app);
 await build({ entryPoints: [fileURLToPath(new URL('../src/identity-client.mjs', import.meta.url))], outfile: fileURLToPath(new URL('identity-client.js', out)), bundle: true, minify: true, format: 'esm', platform: 'browser', target: ['es2020'] });
-await build({ entryPoints: [fileURLToPath(new URL('../src/firebase-client.mjs', import.meta.url))], outfile: fileURLToPath(new URL('firebase-client.js', out)), bundle: true, minify: true, format: 'esm', platform: 'browser', target: ['es2020'] });

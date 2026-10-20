@@ -10,8 +10,13 @@ function response(data: unknown, status = 200) {
 function authorized(user: any) {
   if (!user?.email) return false;
   const email = String(user.email).toLowerCase();
-  const configured = String(process.env.ADMIN_EMAIL || '').toLowerCase();
-  return (configured && email === configured) || user.roles?.includes('admin') || user.app_metadata?.roles?.includes('admin');
+  // ADMIN_EMAILS accepts a comma-separated allowlist. ADMIN_EMAIL remains as a
+  // backwards-compatible single-address fallback for existing deployments.
+  const configured = String(process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || '')
+    .split(',')
+    .map(value => value.trim().toLowerCase())
+    .filter(Boolean);
+  return configured.includes(email) || user.roles?.includes('admin') || user.app_metadata?.roles?.includes('admin');
 }
 
 export default async function handler(request: Request, _context: Context) {

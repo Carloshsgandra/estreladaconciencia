@@ -25,7 +25,7 @@ O projeto é uma plataforma de apresentação e agendamento do Instituto Estrela
 | Projeto Firebase | `estreladaconciencia` |
 | Banco Firestore | `(default)` |
 | Região do Firestore | `southamerica-east1` |
-| E-mail administrativo | `estrelaiec@gmail.com` |
+| E-mails administrativos | `estrelaiec@gmail.com` e `carloshsbgandracode@gmail.com` |
 | Instagram | `@institutoestreladaconciencia` |
 | WhatsApp | `(11) 94591-5395` |
 
@@ -42,8 +42,9 @@ Na data desta documentação:
 - as variáveis de ambiente estão configuradas na Netlify;
 - o Identity público permite cadastro com confirmação de e-mail;
 - o Identity administrativo está em modo **Invite only**;
-- foi enviado convite administrativo para `estrelaiec@gmail.com`;
-- ainda é necessário o titular abrir o convite, definir a senha e fazer o primeiro login no painel;
+- o painel aceita uma lista explícita de e-mails administrativos por variável de ambiente;
+- convites administrativos devem ser enviados para `estrelaiec@gmail.com` e `carloshsbgandracode@gmail.com`;
+- cada titular precisa abrir o próprio convite, definir senha e fazer o primeiro login no painel;
 - os builds foram aprovados;
 - a suíte normal possui 36 testes: 34 executam sem emulador e 2 testes transacionais são ignorados quando o emulador não está ativo.
 
@@ -231,14 +232,14 @@ Para mudar essa política no futuro, altere a regra no servidor e o texto promoc
 
 - serviço: Netlify Identity do projeto administrativo;
 - cadastro: **Invite only**;
-- e-mail principal autorizado: valor de `ADMIN_EMAIL`;
+- e-mails autorizados: valores de `ADMIN_EMAILS`, separados por vírgula; `ADMIN_EMAIL` permanece como alternativa legada para uma conta;
 - alternativa técnica: conta com papel `admin` nos metadados da Identity;
 - o painel rejeita contas não confirmadas;
 - a verificação real ocorre no servidor, não apenas na interface.
 
 ### 8.3 Primeiro acesso administrativo
 
-1. Abrir o convite enviado pela Netlify para `estrelaiec@gmail.com`.
+1. Abrir o convite enviado pela Netlify para `estrelaiec@gmail.com` ou `carloshsbgandracode@gmail.com`.
 2. Definir uma senha.
 3. Acessar <https://estrela-da-consciencia-admin.netlify.app>.
 4. Entrar com o mesmo e-mail convidado.
@@ -369,7 +370,8 @@ O arquivo `firestore.indexes.json` declara:
 | --- | --- | --- |
 | `MAIN_SITE_URL` | não | endereço do site público/API principal |
 | `ADMIN_BRIDGE_SECRET` | **sim** | deve ser exatamente igual ao valor do site público |
-| `ADMIN_EMAIL` | não | conta administrativa autorizada |
+| `ADMIN_EMAILS` | não | lista de contas administrativas autorizadas, separada por vírgula |
+| `ADMIN_EMAIL` | não | alternativa legada para uma única conta |
 
 ### 11.3 Valores não secretos atuais
 
@@ -380,7 +382,7 @@ ADMIN_SITE_URL=https://estrela-da-consciencia-admin.netlify.app
 
 # Painel
 MAIN_SITE_URL=https://resonant-figolla-4a1c25.netlify.app
-ADMIN_EMAIL=estrelaiec@gmail.com
+ADMIN_EMAILS=estrelaiec@gmail.com,carloshsbgandracode@gmail.com
 ```
 
 ### 11.4 Regras para segredos
@@ -608,7 +610,7 @@ Não inventar datas, horários ou capacidade. Cerimônias com inscrições não 
 
 1. Convidar o novo e-mail no Identity do painel.
 2. Confirmar o cadastro do novo titular.
-3. Atualizar `ADMIN_EMAIL`.
+3. Atualizar `ADMIN_EMAILS` sem remover contas que ainda precisam de acesso.
 4. Fazer novo deploy.
 5. Testar o novo acesso.
 6. Somente depois remover ou desautorizar a conta antiga.

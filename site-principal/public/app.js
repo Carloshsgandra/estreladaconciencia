@@ -3,7 +3,7 @@ const IS_ADMIN=false;const ADMIN_URL='https://estreladaconciencia-admin.carloshs
 'use strict';
 /* API-backed interface: the server owns authorization, pricing, availability and persistence. */
 const ZONE='America/Sao_Paulo';
-const $=(q,el=document)=>el.querySelector(q), $$=(q,el=document)=>Array.from(el.querySelectorAll(q));
+const $=(q,el=document)=>el.querySelector(q), $$=(q,el=document)=>Array.from((el&&typeof el.querySelectorAll==='function'?el:document).querySelectorAll(q));
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=()=>crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2);
 const money=n=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(n);

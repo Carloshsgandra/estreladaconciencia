@@ -81,7 +81,8 @@ async function loadConfiguration(db:any){
     await db.runTransaction(async (batch:any)=>{
     if((await batch.get(ref)).exists)return;
     batch.create(ref,{services:d.services,settings:d.settings,version:0,kind:'main',createdAt:Date.now()});
-    for(const name of ['bookings','bookingSlots','ceremonySeats','activeBookings','audit','rateLimits'])batch.set(db.collection(name).doc('__schema__'),{meta:true,schemaVersion:1});
+    // Firestore reserves document IDs matching `__.*__`; use a valid marker ID.
+    for(const name of ['bookings','bookingSlots','ceremonySeats','activeBookings','audit','rateLimits'])batch.set(db.collection(name).doc('_schema'),{meta:true,schemaVersion:1});
     }); snap=await ref.get();
   }
   let data=snap.data();

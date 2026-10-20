@@ -4,7 +4,7 @@
   // dedicated access page and keep the hash intact: it contains the one-time
   // token consumed by identity-client.js.
   const callback=new URLSearchParams(location.hash.slice(1));
-  if(callback.has('recovery_token')){
+  if(['recovery_token','invite_token','confirmation_token','email_change_token'].some(key=>callback.has(key))){
     location.replace('/acesso.html'+location.search+location.hash);
     return;
   }

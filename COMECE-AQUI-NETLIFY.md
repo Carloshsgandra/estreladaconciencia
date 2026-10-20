@@ -11,7 +11,7 @@ O banco ativo é Cloud Firestore, acessado exclusivamente pela Function do site 
 | Site principal | FIREBASE_PRIVATE_KEY | Chave privada: somente Functions e contexto de produção |
 | Ambos | ADMIN_BRIDGE_SECRET | Mesmo segredo criptograficamente aleatório; somente servidor |
 | Site principal | ADMIN_SITE_URL | https://estrela-da-consciencia-admin.netlify.app; build e Functions |
-| Painel | MAIN_SITE_URL | https://resonant-figolla-4a1c25.netlify.app; somente Functions |
+| Painel | MAIN_SITE_URL | https://estreladaconciencia.netlify.app; somente Functions |
 | Painel | ADMIN_EMAIL | estrelaiec@gmail.com; somente Functions |
 
 Não coloque a chave Firebase no painel. Não registre valores secretos em arquivos versionados, logs ou capturas de tela.

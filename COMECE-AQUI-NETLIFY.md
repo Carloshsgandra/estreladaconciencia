@@ -10,8 +10,8 @@ O banco ativo é Cloud Firestore, acessado exclusivamente pela Function do site 
 | Site principal | FIREBASE_CLIENT_EMAIL | Conta de serviço netlify-firestore, papel roles/datastore.user |
 | Site principal | FIREBASE_PRIVATE_KEY | Chave privada: somente Functions e contexto de produção |
 | Ambos | ADMIN_BRIDGE_SECRET | Mesmo segredo criptograficamente aleatório; somente servidor |
-| Site principal | ADMIN_SITE_URL | https://estreladaconciencia-admin.netlify.app; build e Functions |
-| Painel | MAIN_SITE_URL | https://estreladaconciencia.netlify.app; somente Functions |
+| Site principal | ADMIN_SITE_URL | https://estrela-da-consciencia-admin.netlify.app; build e Functions |
+| Painel | MAIN_SITE_URL | https://resonant-figolla-4a1c25.netlify.app; somente Functions |
 | Painel | ADMIN_EMAIL | estrelaiec@gmail.com; somente Functions |
 
 Não coloque a chave Firebase no painel. Não registre valores secretos em arquivos versionados, logs ou capturas de tela.
@@ -40,6 +40,6 @@ A suíte informa explicitamente quando o teste de emulador é ignorado. A versã
 
 O netlify.toml da raiz aponta para site-principal; o painel deve usar base painel-administrativo. Publique primeiro o site e valide /api/state como JSON sem erro 503. Depois publique o painel e valide autorização, agenda e cerimônias.
 
-No Identity público, permita cadastros com confirmação de e-mail ativa. No Identity do painel, use convite para a conta administrativa e mantenha Invite only após validar seu acesso. Senhas e confirmações devem ser preenchidas pelo titular diretamente no navegador.
+No Identity público, permita cadastros com confirmação de e-mail ativa. No Identity do painel, use convite para a conta administrativa e mantenha Invite only após validar seu acesso. Senhas e confirmações devem ser preenchidas pelo titular diretamente no navegador. Consulte também `DOCUMENTACAO-GERAL.md`.
 
 Datas de cerimônia são cadastradas no painel com ano, horário e capacidade fornecidos pelo responsável. Não há datas reais ou dados clínicos de demonstração pré-cadastrados. A análise de saúde é humana e a política de privacidade requer revisão profissional.

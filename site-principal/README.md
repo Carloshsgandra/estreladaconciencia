@@ -5,7 +5,7 @@ Aplicação pública do Instituto Estrela da Consciência. O design original est
 Infraestrutura de produção:
 
 - Netlify Functions: `netlify/functions/api.mts`
-- Netlify Database/Postgres: `netlify/database/migrations`
+- Cloud Firestore: acessado exclusivamente pela Function com Firebase Admin SDK
 - Netlify Identity: conta e caderno do cliente
 - Configuração de deploy: `netlify.toml`
 
@@ -20,7 +20,8 @@ npx netlify dev
 
 Variáveis de produção:
 
+- `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL` e `FIREBASE_PRIVATE_KEY` — acesso do servidor ao Firestore.
 - `ADMIN_BRIDGE_SECRET` — segredo compartilhado somente com o painel.
 - `ADMIN_SITE_URL` — URL pública do projeto do painel.
 
-Use o guia `../COMECE-AQUI-NETLIFY.md` para a publicação completa.
+Use `../DOCUMENTACAO-GERAL.md` como referência principal e `../COMECE-AQUI-NETLIFY.md` como guia rápido.

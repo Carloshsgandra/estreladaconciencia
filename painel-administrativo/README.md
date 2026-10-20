@@ -16,4 +16,4 @@ Variáveis de produção:
 - `ADMIN_BRIDGE_SECRET` — o mesmo segredo do site principal.
 - `ADMIN_EMAIL` — e-mail da conta administrativa autorizada.
 
-No Netlify Identity deste projeto, use cadastro somente por convite. Consulte `../COMECE-AQUI-NETLIFY.md`.
+No Netlify Identity deste projeto, use cadastro somente por convite. Consulte `../DOCUMENTACAO-GERAL.md` como referência principal e `../COMECE-AQUI-NETLIFY.md` como guia rápido.

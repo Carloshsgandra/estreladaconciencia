@@ -3,5 +3,5 @@
 // it to the dedicated password form without changing it.
 (()=>{
   const callback=new URLSearchParams(location.hash.slice(1));
-  if(callback.has('recovery_token'))location.replace('/acesso.html'+location.search+location.hash);
+  if(['recovery_token','invite_token','confirmation_token','email_change_token'].some(key=>callback.has(key)))location.replace('/acesso.html'+location.search+location.hash);
 })();

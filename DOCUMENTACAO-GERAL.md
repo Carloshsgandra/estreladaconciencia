@@ -18,7 +18,7 @@ O projeto é uma plataforma de apresentação e agendamento do Instituto Estrela
 
 | Recurso | Endereço / identificação |
 | --- | --- |
-| Site público | <https://resonant-figolla-4a1c25.netlify.app> |
+| Site público | <https://estreladaconciencia.netlify.app> |
 | Painel administrativo | <https://estrela-da-consciencia-admin.netlify.app> |
 | Repositório GitHub | <https://github.com/Carloshsgandra/estreladaconciencia> |
 | Branch de produção | `main` |
@@ -382,7 +382,7 @@ FIREBASE_PROJECT_ID=estreladaconciencia
 ADMIN_SITE_URL=https://estrela-da-consciencia-admin.netlify.app
 
 # Painel
-MAIN_SITE_URL=https://resonant-figolla-4a1c25.netlify.app
+MAIN_SITE_URL=https://estreladaconciencia.netlify.app
 # Configurar na Netlify antes de liberar a segunda conta:
 ADMIN_EMAILS=estrelaiec@gmail.com,carloshsgandracode@gmail.com
 ```

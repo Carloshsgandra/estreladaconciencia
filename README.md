@@ -8,7 +8,7 @@ Leia **[DOCUMENTACAO-GERAL.md](DOCUMENTACAO-GERAL.md)** antes de desenvolver, pu
 
 Produção:
 
-- site público: <https://resonant-figolla-4a1c25.netlify.app>;
+- site público: <https://estreladaconciencia.netlify.app>;
 - painel: <https://estrela-da-consciencia-admin.netlify.app>.
 
 ## Desenvolvimento

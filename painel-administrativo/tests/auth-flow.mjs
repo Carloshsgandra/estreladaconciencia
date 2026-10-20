@@ -13,9 +13,10 @@ test('convite administrativo abre a ativação de conta',async()=>{
   assert.match(identity,/await acceptInvite\(inviteToken,password\)/);
 });
 
-test('link de recuperação da raiz preserva o token até a tela de senha',async()=>{
+test('links de recuperação e convite preservam o token até a tela de senha',async()=>{
   const redirect=await source('public/auth-callback-redirect.js');
-  assert.match(redirect,/callback\.has\('recovery_token'\)/);
+  assert.match(redirect,/recovery_token/);
+  assert.match(redirect,/invite_token/);
   assert.match(redirect,/location\.replace\('\/acesso\.html'\+location\.search\+location\.hash\)/);
   const page=await source('ui/page.html');
   assert.match(page,/auth-callback-redirect\.js/);

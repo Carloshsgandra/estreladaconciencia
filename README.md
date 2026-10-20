@@ -2,6 +2,15 @@
 
 Monorepositório com o site público (`site-principal/`) e o painel restrito (`painel-administrativo/`). Os dois projetos são publicados separadamente na Netlify. A persistência usa Cloud Firestore exclusivamente por meio da Netlify Function do site principal; as regras negam acesso direto de clientes.
 
+## Documentação
+
+Leia **[DOCUMENTACAO-GERAL.md](DOCUMENTACAO-GERAL.md)** antes de desenvolver, publicar ou alterar a infraestrutura. O documento reúne arquitetura, funcionalidades, banco, autenticação, variáveis, testes, deploy, segurança, manutenção e solução de problemas.
+
+Produção:
+
+- site público: <https://resonant-figolla-4a1c25.netlify.app>;
+- painel: <https://estrela-da-consciencia-admin.netlify.app>.
+
 ## Desenvolvimento
 
 Execute em cada projeto:

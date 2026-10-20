@@ -16,7 +16,7 @@ function authorized(user: any) {
     .split(',')
     .map(value => value.trim().toLowerCase())
     .filter(Boolean);
-  return configured.includes(email) || user.roles?.includes('admin') || user.app_metadata?.roles?.includes('admin');
+  return configured.includes(email) || user.role === 'admin' || user.roles?.includes('admin') || user.appMetadata?.roles?.includes('admin');
 }
 
 export default async function handler(request: Request, _context: Context) {

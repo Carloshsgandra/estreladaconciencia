@@ -1,4 +1,14 @@
 (()=>{
+  // Netlify Identity sends recovery links to the site's configured URL, which
+  // is the home page in production. Move only recovery callbacks to the
+  // dedicated access page and keep the hash intact: it contains the one-time
+  // token consumed by identity-client.js.
+  const callback=new URLSearchParams(location.hash.slice(1));
+  if(callback.has('recovery_token')){
+    location.replace('/acesso.html'+location.search+location.hash);
+    return;
+  }
+
   const reduce=matchMedia('(prefers-reduced-motion: reduce)');
   const whatsapp='https://wa.me/5511945915395';
   let queued=false;

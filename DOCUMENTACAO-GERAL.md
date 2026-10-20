@@ -25,7 +25,7 @@ O projeto é uma plataforma de apresentação e agendamento do Instituto Estrela
 | Projeto Firebase | `estreladaconciencia` |
 | Banco Firestore | `(default)` |
 | Região do Firestore | `southamerica-east1` |
-| E-mails administrativos previstos | `estrelaiec@gmail.com` e `carloshsbgandracode@gmail.com` |
+| E-mails administrativos previstos | `estrelaiec@gmail.com` e `carloshsgandracode@gmail.com` |
 | Instagram | `@institutoestreladaconciencia` |
 | WhatsApp | `(11) 94591-5395` |
 
@@ -44,7 +44,7 @@ Na data desta documentação:
 - o Identity administrativo está em modo **Invite only**;
 - o painel aceita uma lista explícita de e-mails administrativos por variável de ambiente;
 - a conta `estrelaiec@gmail.com` já possui convite administrativo pendente de ativação;
-- o acesso de `carloshsbgandracode@gmail.com` requer o envio de convite e a configuração de `ADMIN_EMAILS` na Netlify;
+- o acesso de `carloshsgandracode@gmail.com` requer o envio de convite e a configuração de `ADMIN_EMAILS` na Netlify;
 - cada titular precisa abrir o próprio convite, definir senha e fazer o primeiro login no painel;
 - os builds foram aprovados;
 - a suíte normal possui 36 testes: 34 executam sem emulador e 2 testes transacionais são ignorados quando o emulador não está ativo.
@@ -240,7 +240,7 @@ Para mudar essa política no futuro, altere a regra no servidor e o texto promoc
 
 ### 8.3 Primeiro acesso administrativo
 
-1. Abrir o convite enviado pela Netlify para `estrelaiec@gmail.com` ou `carloshsbgandracode@gmail.com`.
+1. Abrir o convite enviado pela Netlify para `estrelaiec@gmail.com` ou `carloshsgandracode@gmail.com`.
 2. Definir uma senha.
 3. Acessar <https://estrela-da-consciencia-admin.netlify.app>.
 4. Entrar com o mesmo e-mail convidado.
@@ -384,7 +384,7 @@ ADMIN_SITE_URL=https://estrela-da-consciencia-admin.netlify.app
 # Painel
 MAIN_SITE_URL=https://resonant-figolla-4a1c25.netlify.app
 # Configurar na Netlify antes de liberar a segunda conta:
-ADMIN_EMAILS=estrelaiec@gmail.com,carloshsbgandracode@gmail.com
+ADMIN_EMAILS=estrelaiec@gmail.com,carloshsgandracode@gmail.com
 ```
 
 ### 11.4 Regras para segredos

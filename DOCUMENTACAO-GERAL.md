@@ -25,7 +25,7 @@ O projeto é uma plataforma de apresentação e agendamento do Instituto Estrela
 | Projeto Firebase | `estreladaconciencia` |
 | Banco Firestore | `(default)` |
 | Região do Firestore | `southamerica-east1` |
-| E-mails administrativos | `estrelaiec@gmail.com` e `carloshsbgandracode@gmail.com` |
+| E-mails administrativos previstos | `estrelaiec@gmail.com` e `carloshsbgandracode@gmail.com` |
 | Instagram | `@institutoestreladaconciencia` |
 | WhatsApp | `(11) 94591-5395` |
 
@@ -43,7 +43,8 @@ Na data desta documentação:
 - o Identity público permite cadastro com confirmação de e-mail;
 - o Identity administrativo está em modo **Invite only**;
 - o painel aceita uma lista explícita de e-mails administrativos por variável de ambiente;
-- convites administrativos devem ser enviados para `estrelaiec@gmail.com` e `carloshsbgandracode@gmail.com`;
+- a conta `estrelaiec@gmail.com` já possui convite administrativo pendente de ativação;
+- o acesso de `carloshsbgandracode@gmail.com` requer o envio de convite e a configuração de `ADMIN_EMAILS` na Netlify;
 - cada titular precisa abrir o próprio convite, definir senha e fazer o primeiro login no painel;
 - os builds foram aprovados;
 - a suíte normal possui 36 testes: 34 executam sem emulador e 2 testes transacionais são ignorados quando o emulador não está ativo.
@@ -373,7 +374,7 @@ O arquivo `firestore.indexes.json` declara:
 | `ADMIN_EMAILS` | não | lista de contas administrativas autorizadas, separada por vírgula |
 | `ADMIN_EMAIL` | não | alternativa legada para uma única conta |
 
-### 11.3 Valores não secretos atuais
+### 11.3 Valores de referência não secretos
 
 ```dotenv
 # Site público
@@ -382,6 +383,7 @@ ADMIN_SITE_URL=https://estrela-da-consciencia-admin.netlify.app
 
 # Painel
 MAIN_SITE_URL=https://resonant-figolla-4a1c25.netlify.app
+# Configurar na Netlify antes de liberar a segunda conta:
 ADMIN_EMAILS=estrelaiec@gmail.com,carloshsbgandracode@gmail.com
 ```
 

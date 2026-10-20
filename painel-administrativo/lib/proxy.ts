@@ -1,8 +1,8 @@
 import { env } from 'cloudflare:workers';
 import { getChatGPTUser } from '../app/chatgpt-auth';
-const E=env as unknown as {ADMIN_EMAIL?:string;ADMIN_BRIDGE_SECRET?:string;MAIN_SITE_URL?:string;MAIN_SITE_ACCESS_TOKEN?:string};
+const E=env as unknown as {ADMIN_EMAIL?:string;ADMIN_EMAILS?:string;ADMIN_BRIDGE_SECRET?:string;MAIN_SITE_URL?:string;MAIN_SITE_ACCESS_TOKEN?:string};
 const headers={'Cache-Control':'no-store, private','X-Content-Type-Options':'nosniff'};
-export async function adminIdentity(){const user=await getChatGPTUser();return user&&E.ADMIN_EMAIL&&user.email.toLowerCase()===E.ADMIN_EMAIL.toLowerCase()?user:null}
+export async function adminIdentity(){const user=await getChatGPTUser();const emails=String(E.ADMIN_EMAILS||E.ADMIN_EMAIL||'').split(',').map(value=>value.trim().toLowerCase()).filter(Boolean);return user&&emails.includes(user.email.toLowerCase())?user:null}
 export async function proxy(request:Request){
  try{const user=await adminIdentity();if(!user)return Response.json({error:'Acesso exclusivo à conta administradora autorizada.'},{status:403,headers});
  if(request.method==='POST'){if(request.headers.get('origin')!==new URL(request.url).origin)return Response.json({error:'Origem não permitida.'},{status:403,headers});if(!request.headers.get('content-type')?.startsWith('application/json'))return Response.json({error:'Formato inválido.'},{status:415,headers})}

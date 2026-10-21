@@ -121,6 +121,18 @@ function validateSlot(config:any,appointment:any,duration:number){
   return start;
 }
 
+// Locks use a fixed, global 15-minute grid rather than the opening time of a
+// particular day. This makes two intervals that overlap share at least one
+// document, even if an administrator later changes the opening time.
+function slotIdsForRange(date:string,start:number,endAt:number){
+  const ids=[];
+  for(let at=Math.floor(start/(15*60000))*15*60000;at<endAt;at+=15*60000){
+    const part=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(at)).replace(':','');
+    ids.push(`${date}_${part}`);
+  }
+  return ids;
+}
+
 function validateMedicationClasses(value:any){
   const allowed=['Antidepressivos','Estabilizadores de humor','Estimulantes','Medicamentos para dormir','Substâncias que atuam no sistema nervoso'];
   if(value===undefined)return [];
@@ -146,7 +158,7 @@ async function createNormal(db:any,body:any,user:any,admin:boolean,config:any){
   if(!['online','presencial'].includes(v.mode)||!(v.mode==='online'?config.settings.online:config.settings.presential))fail('Modalidade indisponível.'); if(!admin)bool(body.consent,'É necessário aceitar o uso dos dados para agendar.');
   const start=validateSlot(config,v,service.duration),owner=admin?`manual:${crypto.randomUUID()}`:user.userId;
   const appointment={service:service.id,title:service.title,duration:service.duration,price:service.price,date:v.date,time:v.time,mode:v.mode,name:clean(v.name,100,true),email:admin?email(v.email):user.email,phone:phone(v.phone),topic:clean(v.topic,100,true),intention:clean(v.intention||'',1500),status:'pendente',created:new Date().toISOString(),createdAt:Date.now(),startAt:start,endAt:start+service.duration*60000,userId:owner,notes:'',cards:'',video:'',location:v.mode==='presencial'?config.settings.address:'',version:0,type:'appointment'};
-  const bookingRef=db.collection('bookings').doc(v.id),slotIds=[];for(let at=start;at<appointment.endAt;at+=15*60000){const d=new Date(at),parts=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',hour:'2-digit',minute:'2-digit',hour12:false}).format(d).replace(':','');slotIds.push(`${v.date}_${parts}`);}appointment.slotIds=slotIds;
+  const bookingRef=db.collection('bookings').doc(v.id),slotIds=slotIdsForRange(v.date,start,appointment.endAt);appointment.slotIds=slotIds;
   await db.runTransaction(async(tx:any)=>{const configSnap=await tx.get(db.collection('configuration').doc('main'));if(Number(configSnap.data()?.version||0)!==config.rev)fail('A disponibilidade mudou. Atualize a página.',409);const booking=await tx.get(bookingRef),slotRefs=slotIds.map(id=>db.collection('bookingSlots').doc(id)),slots=await Promise.all(slotRefs.map((ref:any)=>tx.get(ref)));if(booking.exists)fail('Reserva já existente.',409);if(slots.some((slot:any)=>slot.exists))fail('Este horário acabou de ser reservado.',409);tx.create(bookingRef,appointment);slotRefs.forEach((ref:any,index:number)=>tx.create(ref,{bookingId:v.id,date:v.date,time:v.time,slot:slotIds[index],startAt:start,endAt:appointment.endAt}));tx.set(db.collection('activeBookings').doc(`slot_${v.id}`),{bookingId:v.id,userId:owner,type:'appointment'});await audit(tx,db,admin?'administrator':owner,'create',v.id);});
 }
 
@@ -195,13 +207,12 @@ async function updateBooking(db:any,body:any,user:any,admin:boolean,config:any){
       if(!admin&&old.startAt-Date.now()<config.settings.lead*3600000)fail('O prazo de alteração terminou. Fale com o instituto.');
       if(moved){
         if(!ACTIVE.has(old.status))fail('Esta consulta não pode ser remarcada.');
-        const start=validateSlot(config,v,old.duration),endAt=start+old.duration*60000,newSlotIds=[];
-        for(let at=start;at<endAt;at+=15*60000){const d=new Date(at),part=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',hour:'2-digit',minute:'2-digit',hour12:false}).format(d).replace(':','');newSlotIds.push(`${v.date}_${part}`);}
+        const start=validateSlot(config,v,old.duration),endAt=start+old.duration*60000,newSlotIds=slotIdsForRange(v.date,start,endAt);
         const newRefs=newSlotIds.map(id=>db.collection('bookingSlots').doc(id));
         const slots=await Promise.all(newRefs.map((slotRef:any)=>tx.get(slotRef)));
         if(slots.some((slot:any)=>slot.exists&&slot.data().bookingId!==v.id))fail('Este horário acabou de ser reservado.',409);
         (old.slotIds||[]).filter((id:string)=>!newSlotIds.includes(id)).forEach((id:string)=>tx.delete(db.collection('bookingSlots').doc(id)));
-        newRefs.forEach((slotRef:any,index:number)=>{if(!slots[index].exists)tx.create(slotRef,{bookingId:v.id,date:v.date,time:v.time,slot:newSlotIds[index],startAt:start,endAt});});
+        newRefs.forEach((slotRef:any,index:number)=>{const data={bookingId:v.id,date:v.date,time:v.time,slot:newSlotIds[index],startAt:start,endAt};if(!slots[index].exists)tx.create(slotRef,data);else tx.update(slotRef,data);});
         Object.assign(next,{date:v.date,time:v.time,startAt:start,endAt,slotIds:newSlotIds,status:'pendente',video:''});
       }else if(!admin){
         if(v.status!=='cancelado'||!ACTIVE.has(old.status))fail('Alteração não permitida.',403);

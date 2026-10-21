@@ -789,3 +789,50 @@ O endereço `/api/state` deve retornar JSON. No site público sem login, é norm
 9. Abrir revisão antes de publicar na `main`.
 10. Registrar neste documento qualquer mudança de arquitetura, domínio, conta ou procedimento.
 
+## 25. Revisão de autenticação — 20/10/2026
+
+### Fluxo e arquivos que devem permanecer sincronizados
+
+O código comum está em `shared/`. Os dois projetos importam esses arquivos; portanto, publique o repositório completo, não apenas uma pasta isolada.
+
+- `access-page.mjs`: formulário, cadastro, recuperação, convite, confirmação, troca de senha e saída.
+- `verified-identity.mjs`: valida o token recebido no serviço Identity da própria origem. Não usa apenas o conteúdo decodificado de um JWT para autorizar alguém.
+- `session-bridge.mjs`: aguarda a renovação da sessão antes das chamadas da agenda.
+- `auth-callback-redirect.js`: preserva o token recebido na raiz e abre `/acesso.html` antes da inicialização da agenda.
+- `auth-behavior.test.mjs`: testes executáveis dos fluxos com respostas controladas; não equivalem a login real em produção.
+
+Após login, o navegador consulta `GET /api/session`. Só abre a área de destino quando o servidor reconhece o usuário. A resposta contém `authVersion: 2026-10-20-session-v2`. Esse endpoint não depende do Firestore nem da ponte administrativa, permitindo distinguir uma falha de login de uma falha na agenda.
+
+Os métodos de convite e recuperação da versão instalada do SDK não gravam os mesmos cookies do login normal. Após salvar a senha, o formulário realiza o login normal e verifica a sessão. Não consumir o token apenas ao abrir a página: o usuário precisa preencher e confirmar a senha primeiro. Não registrar tokens, cookies ou senhas em logs.
+
+As sessões são independentes entre o domínio público e o administrativo. Criar conta no site público não concede acesso ao painel. O painel exige conta confirmada e e-mail em `ADMIN_EMAILS` (ou papel `admin` em `app_metadata`, gerenciado no servidor). Nunca confiar em papéis enviados em `user_metadata`.
+
+E-mail correto de Carlos: `carloshsgandracode@gmail.com`. Alterar um `.env.example` não altera a configuração publicada: conferir a variável real do painel na Netlify e fazer novo deploy quando necessário.
+
+### Diagnóstico objetivo
+
+| Resultado | Significado | Ação |
+|---|---|---|
+| 401 em `/api/session` | Sem sessão válida | Entrar novamente; verificar cookies e domínio |
+| 403 `EMAIL_UNCONFIRMED` | Identity informa e-mail não confirmado | Concluir confirmação pelo e-mail |
+| 403 `ADMIN_FORBIDDEN` | Conta válida sem autorização administrativa | Conferir `ADMIN_EMAILS` no painel, sem liberar cadastro público |
+| 503 `IDENTITY_UNAVAILABLE` | Serviço de identidade indisponível | Verificar logs e serviço; não remover a autenticação |
+| Sessão 200, agenda 503/502 | Autenticação válida; falha posterior | Conferir `MAIN_SITE_URL`, ponte e API pública |
+| Limite de solicitações | Identity recusou novas tentativas | Aguardar; não reenviar repetidamente nem desativar proteções |
+
+### Testes e limites da validação
+
+Executar `npm test` e `npm run build` dentro de cada projeto. Nesta revisão, a execução com emulador resultou em 74 testes aprovados, sem falhas ou testes ignorados, no site público; 45 aprovados no painel. Há 37 casos compartilhados executados em ambas as suítes: não somar os totais como cenários exclusivos. Os dois builds passaram e `npm audit --omit=dev --audit-level=high` não encontrou vulnerabilidades nas dependências de produção no momento da revisão.
+
+Para incluir testes transacionais, executar na raiz, com Java compatível com a versão do Firebase CLI:
+
+```sh
+npx firebase-tools emulators:exec --only firestore --project demo-estrela-validation --config firebase.test.json "npm --prefix site-principal test"
+```
+
+O ambiente desta revisão tem Java 17: os testes foram executados com `npm exec --yes --package=firebase-tools@14.22.0 -- firebase emulators:exec --only firestore --project demo-estrela-validation --config firebase.test.json "npm --prefix site-principal test"`. A versão 15 do CLI exige Java 21 ou superior. Essa ferramenta de teste não faz parte das dependências de produção.
+
+Usar somente o projeto demonstrativo e o emulador local. Nunca apontar essa suíte ao banco de produção. Os testes cobrem concorrência de última vaga, duplicidade, cancelamento, propriedade, histórico e exclusão mútua de horários.
+
+A homologação final exige uma conta real: entrar no painel, recarregar sem perder sessão, sair, testar confirmação de cadastro e concluir recuperação com o e-mail recebido. O titular deve digitar a própria senha; não enviá-la no chat. Testes simulados, builds e verificações anônimas não comprovam esse fluxo autenticado completo, nem garantem ausência de erros futuros.
+

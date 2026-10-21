@@ -19,6 +19,17 @@ test('consentimentos, assinatura, enums, detalhes e email autenticado',()=>{
 test('notas internas não chegam ao participante',()=>{assert.equal(api.visibleBooking({internal:{notes:'privado'},anamnesis:fixture()},false).internal,undefined);});
 test('contexto assinado da Identity aceita o identificador sub',()=>{assert.deepEqual(api.actor({sub:'identity-user',email:'IDENTITY@example.invalid',user_metadata:{full_name:'Pessoa'} }),{userId:'identity-user',email:'identity@example.invalid',displayName:'Pessoa',confirmed:true});});
 test('ponte sem segredo válido retorna JSON 403',async()=>{process.env.ADMIN_BRIDGE_SECRET='test-only-secret';const res=await api.default(new Request('https://example.invalid/api/bridge',{headers:{'X-Admin-Bridge':'wrong'}}),{});assert.equal(res.status,403);assert.match(res.headers.get('content-type'),/application\/json/);delete process.env.ADMIN_BRIDGE_SECRET;});
+test('sessão pública exige identidade validada e não consulta banco',async()=>{
+ const original=globalThis.fetch;
+ try {
+  assert.equal((await api.default(new Request('https://example.invalid/api/session'),{})).status,401);
+  globalThis.fetch=async()=>Response.json({id:'session-test',email:'session@example.invalid',confirmed_at:'2026-01-01'});
+  const response=await api.default(new Request('https://example.invalid/api/session',{headers:{cookie:'nf_jwt=test'}}),{});
+  assert.equal(response.status,200);assert.equal((await response.json()).user.id,'session-test');
+  globalThis.fetch=async()=>new Response('',{status:401});
+  assert.equal((await api.default(new Request('https://example.invalid/api/session',{headers:{cookie:'nf_jwt=expired'}}),{})).status,401);
+ } finally {globalThis.fetch=original;}
+});
 test('Firestore: concorrência, cancelamento, duplicidade, propriedade e histórico',{skip:!process.env.FIRESTORE_EMULATOR_HOST},async()=>{
  assert.match(process.env.FIRESTORE_EMULATOR_HOST,/^(127\.0\.0\.1|localhost):/);
  const db=getFirestore(initializeApp({projectId:'demo-estrela-validation'},'tests-'+Date.now()));

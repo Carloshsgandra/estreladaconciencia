@@ -22,6 +22,7 @@ let memory=defaults(),toastTimer,clientEmail='',adminTab='agenda',adminFilter='t
 let booking={step:0,service:'avulsa',date:'',time:'',mode:'online',view:'cards',offset:0,customer:{name:'',email:'',phone:'',topic:'',intention:''},consent:false};
 function read(){return memory}
 async function requestApi(path, options = {}) {
+ if(typeof window!=='undefined'&&window.iecEnsureSession)await window.iecEnsureSession();
  const controller = new AbortController();
  const timer = setTimeout(() => controller.abort(), 20000);
  try {
@@ -150,6 +151,6 @@ function render(){const hash=(location.hash||(IS_ADMIN?'#admin':'#home')).slice(
 window.addEventListener('hashchange',()=>{const hash=location.hash.slice(1);if(hash.startsWith('book')){const id=hash.split('/')[1];if(id&&read().services.some(s=>s.id===id&&s.active))booking={...booking,service:id,step:0,date:'',time:'',done:null};else if(booking.done)booking={...booking,step:0,date:'',time:'',done:null}}$('#navigation').classList.remove('open');$('#menu').setAttribute('aria-expanded','false');render();if(!['#services','#about','#how','#faq'].includes(location.hash))$('#main').focus({preventScroll:true})});
 
 $('#menu').onclick=()=>{const open=$('#navigation').classList.toggle('open');$('#menu').setAttribute('aria-expanded',String(open))};document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('#navigation').classList.remove('open');$('#menu').setAttribute('aria-expanded','false')}});$('#dialog').addEventListener('click',e=>{if(e.target===$('#dialog')){const rect=e.target.getBoundingClientRect();if(e.clientX<rect.left||e.clientX>rect.right||e.clientY<rect.top||e.clientY>rect.bottom)e.target.close()}});
-if(location.hash.startsWith('#book/')){const id=location.hash.split('/')[1];if(read().services.some(s=>s.id===id))booking.service=id}async function initialize(){try{await fetchState();if(memory.user&&!IS_ADMIN){booking.customer.name=memory.user.name||'';booking.customer.email=memory.user.email;clientEmail=memory.user.email.toLowerCase()}render()}catch(e){$('#main').innerHTML='<section class="wrap section"><h1>Uma pausa na conexão.</h1><p>'+esc(e.message)+'</p><button class="btn" id="retry-load">Tentar novamente</button></section>';$('#retry-load').onclick=initialize}}
-initialize();
+if(location.hash.startsWith('#book/')){const id=location.hash.split('/')[1];if(read().services.some(s=>s.id===id))booking.service=id}async function initialize(){try{await fetchState();if(memory.user&&!IS_ADMIN){booking.customer.name=memory.user.name||'';booking.customer.email=memory.user.email;clientEmail=memory.user.email.toLowerCase()}render()}catch(e){if(IS_ADMIN&&e.status===401){location.replace('/acesso.html?return_to=%2F%23admin');return}$('#main').innerHTML='<section class="wrap section"><h1>'+([401,403].includes(e.status)?'Precisamos confirmar seu acesso.':'Uma pausa na conexão.')+'</h1><p>'+esc(e.message)+'</p><button class="btn" id="retry-load">Tentar novamente</button>'+([401,403].includes(e.status)?'<p><a class="btn" href="/acesso.html?action=logout">Entrar novamente ou trocar de conta</a></p>':'')+'</section>';$('#retry-load').onclick=initialize}}
+if(!window.iecAuthRedirect)initialize();
 window.addEventListener('focus',()=>fetchState().catch(()=>{}));

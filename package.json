@@ -1,0 +1,20 @@
+{
+  "name": "iec-desenvolvimento-local",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "setup": "npm ci && npm --prefix site-principal ci && npm --prefix painel-administrativo ci",
+    "start": "node local/start.mjs",
+    "build:local": "node local/build.mjs",
+    "test:local": "firebase emulators:exec --only firestore --project demo-iec-local --config firebase.local.json \"node --test local/tests/*.test.mjs\"",
+    "test": "npm --prefix site-principal test && npm --prefix painel-administrativo test",
+    "verify": "firebase emulators:exec --only firestore --project demo-estrela-validation --config firebase.test.json \"node local/verify.mjs\""
+  },
+  "devDependencies": {
+    "firebase-tools": "15.34.1",
+    "netlify-cli": "27.14.1"
+  }
+}

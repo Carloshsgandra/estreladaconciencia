@@ -11,7 +11,10 @@
   [headers.values]
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "no-referrer"
-    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
+    Cross-Origin-Opener-Policy = "same-origin"
+    Cross-Origin-Resource-Policy = "same-origin"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
     Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
 
 [[redirects]]
@@ -29,11 +32,6 @@
   from = "/signout-with-chatgpt"
   to = "/acesso.html?action=logout"
   status = 302
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
 
 [functions]
   node_bundler = "esbuild"

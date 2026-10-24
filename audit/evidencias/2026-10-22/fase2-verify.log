@@ -1,0 +1,236 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> verify
+> firebase emulators:exec --only firestore --project demo-estrela-validation --config firebase.test.json "node local/verify.mjs"
+
+i  emulators: Starting emulators: firestore
+i  emulators: Detected demo project ID "demo-estrela-validation", emulated services will use a demo configuration and attempts to access non-emulated services for this project will fail.
+i  firestore: Firestore Emulator logging to firestore-debug.log
+✔  firestore: Firestore Emulator was started in standard edition.
+✔  firestore: Firestore Emulator UI websocket is running on 9150.
+i  Running script: node local/verify.mjs
+✔ site-principal: carrega JSON e usa credenciais da mesma origem (10.975125ms)
+✔ site-principal: HTML 200 gera mensagem legível sem substituir o estado (4.373863ms)
+✔ site-principal: HTML 404 gera mensagem legível sem substituir o estado (5.657921ms)
+✔ site-principal: HTML 500 gera mensagem legível sem substituir o estado (1.868652ms)
+✔ site-principal: rejeita JSON quebrado e dados incompletos (5.438447ms)
+✔ site-principal: preserva status de autenticação e mensagens do servidor (1.992961ms)
+✔ site-principal: trata falha de rede (2.553937ms)
+✔ site-principal: encerra requisição demorada (12.35863ms)
+✔ site-principal: conflito atualiza agenda sem repetir POST (4.084792ms)
+✔ site-principal: erro de gravação não confirma dados no navegador (1.718313ms)
+✔ painel-administrativo: carrega JSON e usa credenciais da mesma origem (2.266214ms)
+✔ painel-administrativo: HTML 200 gera mensagem legível sem substituir o estado (1.222851ms)
+✔ painel-administrativo: HTML 404 gera mensagem legível sem substituir o estado (1.252844ms)
+✔ painel-administrativo: HTML 500 gera mensagem legível sem substituir o estado (1.401065ms)
+✔ painel-administrativo: rejeita JSON quebrado e dados incompletos (3.688726ms)
+✔ painel-administrativo: preserva status de autenticação e mensagens do servidor (0.957729ms)
+✔ painel-administrativo: trata falha de rede (0.918077ms)
+✔ painel-administrativo: encerra requisição demorada (5.424377ms)
+✔ painel-administrativo: conflito atualiza agenda sem repetir POST (1.824147ms)
+✔ painel-administrativo: erro de gravação não confirma dados no navegador (1.624589ms)
+✔ landing renderiza catálogo real sem mensalidade indevida (7.183178ms)
+✔ catálogo inativo e vazio não cria oferta fictícia (0.884187ms)
+✔ nome, descrição e biografia são escapados (1.635399ms)
+✔ modalidade e antecedência refletem configuração (1.714867ms)
+✔ link do serviço codifica identificador (1.212513ms)
+✔ serviço extra ativo aparece com link próprio e some ao desativar (2.635718ms)
+✔ URL de build é explícita e normalizada (0.966686ms)
+✔ URL de build rejeita protocolo, credencial, caminho e fragmento (0.386908ms)
+✔ preflight recusa configuração ausente e segredo mascarado (5.297908ms)
+✔ anônimo não faz consulta de identidade (5.28326ms)
+✔ cookie é verificado na Identity da própria origem (6.226096ms)
+✔ Bearer é verificado e não confia em cookies conflitantes (1.047828ms)
+✔ cookie malformado e Authorization inválida falham fechados (1.760467ms)
+✔ Identity HTTP 401 nunca autentica (1.741089ms)
+✔ Identity HTTP 403 nunca autentica (0.876632ms)
+✔ Identity HTTP 429 nunca autentica (0.502837ms)
+✔ Identity HTTP 500 nunca autentica (3.936095ms)
+✔ falha de rede e JSON inválido não viram conta confirmada (1.558406ms)
+✔ usuário realmente não confirmado recebe erro específico (1.75001ms)
+✔ somente e-mail da lista explícita do servidor autoriza admin (0.515515ms)
+✔ retorno não permite origem externa nem ciclo para login/API (0.714318ms)
+✔ preflight rejeita sessão ausente, 403 e resposta HTML (2.333415ms)
+✔ mensagem de limite não promete prazo inventado (0.490317ms)
+✔ painel login valida API antes de navegar (3.509949ms)
+✔ painel sessão local não cria redirecionamento automático (0.535856ms)
+✔ painel preflight 401 deixa erro visível (1.708253ms)
+✔ painel preflight 403 deixa erro visível (1.518623ms)
+✔ painel preflight 503 deixa erro visível (0.802713ms)
+✔ site login valida API antes de navegar (0.959087ms)
+✔ site sessão local não cria redirecionamento automático (0.442475ms)
+✔ site preflight 401 deixa erro visível (1.073024ms)
+✔ site preflight 403 deixa erro visível (2.082476ms)
+✔ site preflight 503 deixa erro visível (1.338284ms)
+✔ invite: só consome token ao salvar e sincroniza cookie com login (1.763823ms)
+✔ invite: senha divergente não consome link (1.767857ms)
+✔ reset: só consome token ao salvar e sincroniza cookie com login (0.593296ms)
+✔ reset: senha divergente não consome link (0.444384ms)
+✔ senha incorreta permanece no formulário (0.505359ms)
+✔ cadastro pede confirmação e não navega como autenticado (0.560764ms)
+✔ recuperação evita pedidos repetidos imediatos (2.684726ms)
+✔ logout não verifica nem redireciona à área protegida (0.323242ms)
+✔ troca de senha exige sessão e encerra sessão depois de salvar (0.414144ms)
+✔ troca sem sessão não oferece formulário de nova senha (0.322109ms)
+✔ confirmação chama callback e valida sessão (4.922862ms)
+✔ retorno de convite na raiz marca redirecionamento antes de inicializar app (34.644912ms)
+✔ renovação é aguardada e chamadas concorrentes compartilham uma operação (0.649806ms)
+✔ catálogo, textos e regra promocional permanecem no servidor (1.873999ms)
+✔ datas, horários e links mantêm validação (30.713662ms)
+✔ Firestore nega todo acesso direto do navegador (0.460188ms)
+✔ última vaga usa transação e ID determinístico (0.289756ms)
+✔ cancelamento libera vaga e duplicidade ativa é recusada (0.692898ms)
+✔ cerimônia fechada e passada são recusadas (0.331746ms)
+✔ anamnese exige detalhes, assinatura e consentimento sensível (0.729804ms)
+✔ notas internas não chegam ao participante nem à disponibilidade (0.251689ms)
+✔ API exige identidade, origem, JSON, limite e segredo com comparação constante (0.842917ms)
+✔ Tarô e Reiki reservam todos os intervalos na transação (0.656807ms)
+✔ consentimentos, assinatura, enums, detalhes e email autenticado (29.815662ms)
+✔ notas internas não chegam ao participante (0.43074ms)
+✔ contexto assinado da Identity aceita o identificador sub (1.11649ms)
+✔ ponte sem segredo válido retorna JSON 403 (10.149499ms)
+✔ sessão pública exige identidade validada e não consulta banco (3.825031ms)
+✔ Firestore: concorrência, cancelamento, duplicidade, propriedade e histórico (7334.423438ms)
+✔ Firestore: Tarô e Reiki preservam exclusão mútua e liberação de horários (3323.205864ms)
+✔ metadados e sitemap acompanham a origem real do deploy (1.11049ms)
+✔ rotas inexistentes alcançam a página 404 de cada site (0.459934ms)
+✔ site-principal: resumo usa política do servidor e data selecionada (44.691386ms)
+✔ painel-administrativo: resumo usa política do servidor e data selecionada (1.970982ms)
+✔ preço com relógio simulado 2027-01-01T02:59:59Z: R$97 (1.330273ms)
+✔ preço com relógio simulado 2027-01-01T03:00:00Z: R$137 (0.62372ms)
+✔ reserva antes da virada para atendimento depois: duas políticas explícitas (0.948814ms)
+✔ preço rejeita data inválida e preserva outros serviços (1.623331ms)
+✔ publicação exige dois projetos reais distintos e IDs explícitos (2.137478ms)
+✔ limite é aplicado em bytes, inclusive texto multibyte (6.815455ms)
+✔ stream acima do limite é cancelado antes de leitura completa (1.06957ms)
+✔ comprimento declarado excessivo e UTF-8 inválido são recusados (1.311054ms)
+ℹ tests 95
+ℹ suites 0
+ℹ pass 95
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11393.229669
+✔ allowlist normaliza lista; não aceita configuração vazia ou malformada (1.987286ms)
+✔ conta válida fora da allowlist não é autorizada por role (0.204552ms)
+▶ API administrativa: sessão, autorização e ponte
+  ✔ anônimo não chama Identity nem banco (4.899708ms)
+  ✔ allowlist vazia retorna configuração 503 sem autorizar sessão (2.759905ms)
+  ✔ sessão independe da configuração da ponte (1.527952ms)
+  ✔ role no perfil não substitui a lista explícita de administradores (1.138304ms)
+  ✔ conta sem permissão recebe 403 (1.390608ms)
+  ✔ email pendente recebe erro específico (1.121407ms)
+  ✔ sessão expirada recebe 401 (0.763701ms)
+  ✔ ponte ausente não é tratada como falha de senha (0.721011ms)
+  ✔ POST de outra origem é bloqueado (0.718741ms)
+✔ API administrativa: sessão, autorização e ponte (19.073358ms)
+✔ anônimo não faz consulta de identidade (3.794486ms)
+✔ cookie é verificado na Identity da própria origem (5.736259ms)
+✔ Bearer é verificado e não confia em cookies conflitantes (0.878676ms)
+✔ cookie malformado e Authorization inválida falham fechados (1.677027ms)
+✔ Identity HTTP 401 nunca autentica (0.698419ms)
+✔ Identity HTTP 403 nunca autentica (0.858556ms)
+✔ Identity HTTP 429 nunca autentica (0.561668ms)
+✔ Identity HTTP 500 nunca autentica (1.821793ms)
+✔ falha de rede e JSON inválido não viram conta confirmada (1.897402ms)
+✔ usuário realmente não confirmado recebe erro específico (1.51114ms)
+✔ somente e-mail da lista explícita do servidor autoriza admin (0.716367ms)
+✔ retorno não permite origem externa nem ciclo para login/API (0.807557ms)
+✔ preflight rejeita sessão ausente, 403 e resposta HTML (1.716676ms)
+✔ mensagem de limite não promete prazo inventado (0.666423ms)
+✔ painel login valida API antes de navegar (3.285883ms)
+✔ painel sessão local não cria redirecionamento automático (0.346497ms)
+✔ painel preflight 401 deixa erro visível (0.682443ms)
+✔ painel preflight 403 deixa erro visível (0.625485ms)
+✔ painel preflight 503 deixa erro visível (0.552964ms)
+✔ site login valida API antes de navegar (0.572133ms)
+✔ site sessão local não cria redirecionamento automático (0.445581ms)
+✔ site preflight 401 deixa erro visível (0.480291ms)
+✔ site preflight 403 deixa erro visível (0.614665ms)
+✔ site preflight 503 deixa erro visível (0.340132ms)
+✔ invite: só consome token ao salvar e sincroniza cookie com login (0.751931ms)
+✔ invite: senha divergente não consome link (0.630307ms)
+✔ reset: só consome token ao salvar e sincroniza cookie com login (0.37978ms)
+✔ reset: senha divergente não consome link (0.173169ms)
+✔ senha incorreta permanece no formulário (0.324585ms)
+✔ cadastro pede confirmação e não navega como autenticado (0.262553ms)
+✔ recuperação evita pedidos repetidos imediatos (2.329513ms)
+✔ logout não verifica nem redireciona à área protegida (0.753093ms)
+✔ troca de senha exige sessão e encerra sessão depois de salvar (0.576738ms)
+✔ troca sem sessão não oferece formulário de nova senha (0.256381ms)
+✔ confirmação chama callback e valida sessão (0.508264ms)
+✔ retorno de convite na raiz marca redirecionamento antes de inicializar app (24.567424ms)
+✔ renovação é aguardada e chamadas concorrentes compartilham uma operação (0.572692ms)
+ℹ tests 49
+ℹ suites 0
+ℹ pass 49
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 205.40357
+✔ 12 reservas simultâneas: exatamente uma vence; outras recebem conflito claro (3942.695032ms)
+✔ cancelar: 1 minuto antes do prazo (318.063287ms)
+✔ cancelar: 1 minuto depois do prazo (66.025865ms)
+✔ remarcar: 1 minuto antes do prazo (75.36928ms)
+✔ remarcar: 1 minuto depois do prazo (50.576997ms)
+✔ repetir criação com mesmo ID não duplica reserva nem log (66.783138ms)
+✔ preço persistido pela política booking; remarcação preserva valor contratado (61.340593ms)
+✔ preço persistido pela política appointment; remarcação preserva valor contratado (53.628078ms)
+✔ regras: anônimo não pode GET ficha diretamente (497.813289ms)
+✔ regras: anônimo não pode PATCH ficha diretamente (65.038671ms)
+✔ regras: titular A não pode GET ficha diretamente (24.580851ms)
+✔ regras: titular A não pode PATCH ficha diretamente (26.68385ms)
+✔ regras: outro usuário B não pode GET ficha diretamente (11.920532ms)
+✔ regras: outro usuário B não pode PATCH ficha diretamente (25.028283ms)
+✔ regras: claim admin no navegador não pode GET ficha diretamente (15.004504ms)
+✔ regras: claim admin no navegador não pode PATCH ficha diretamente (17.240356ms)
+✔ regras: coleção desconhecida também nega por padrão (22.577875ms)
+✔ gravação persiste, ignora preço/email forjados e gera auditoria (350.050823ms)
+✔ consentimento e conflito recusados não deixam reserva parcial (186.746799ms)
+✔ remarcação para horário ocupado preserva reserva e locks antigos (150.27797ms)
+✔ remarcação válida libera origem, grava destino e rejeita versão antiga (143.357593ms)
+✔ confirmação exige link e conclusão antecipada é bloqueada (126.390749ms)
+✔ estado público não revela reservas; cliente não recebe dados de outro (196.995631ms)
+✔ configuração com versão antiga não sobrescreve mudança recente (42.207231ms)
+✔ limite de alterações bloqueia a 41ª tentativa (463.854589ms)
+✔ INVARIANTE: horário de abertura fora da grade não permite sobreposição (69.374202ms)
+✔ INVARIANTE: remarcação parcialmente sobreposta atualiza todos os locks (92.181503ms)
+✔ Firestore REST rejeita leitura direta sem identidade administrativa (52.698176ms)
+✔ serviço extra persiste, reserva com preço do servidor e preserva histórico após edição e desativação (207.543833ms)
+✔ catálogo rejeita IDs duplicados, exclusão, excesso, formato inválido e duração inválida sem gravar (75.984219ms)
+ℹ tests 30
+ℹ suites 0
+ℹ pass 30
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5135.096711
+IEC LOCAL: site http://127.0.0.1:8888 | painel http://127.0.0.1:8889 | mensagens /local/inbox
+✔ site e painel servem telas, bundles e cabeçalhos defensivos (52.048227ms)
+✔ acesso anônimo e origem externa são rejeitados (37.857025ms)
+✔ cadastro exige confirmação; token só pode ser usado uma vez (127.046317ms)
+✔ senha errada falha; logout revoga sessão; login restaura sessão (99.107538ms)
+✔ cliente comum não ganha acesso administrativo; e-mail autorizado entra (452.315204ms)
+✔ configuração, reserva e colisão passam pelas funções reais e pelo Firestore (219.910907ms)
+✔ reserva aparece ao dono e ao admin; outro cliente não vê dados privados (225.25898ms)
+✔ recuperação não revela conta inexistente; nova senha revoga sessão anterior (209.631193ms)
+✔ contas persistem em disco sem senha em texto; links expiram (48.398764ms)
+✔ porta ocupada falha com orientação sem encerrar outro processo (23.287027ms)
+✔ porta livre é liberada após pré-verificação (1.006024ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2157.458418
+VERIFICAÇÃO LOCAL CONCLUÍDA. Builds de teste usam example.invalid, não estão prontos para publicar. Faça o build de produção com as URLs reais.
+✔  Script exited successfully (code 0)
+i  emulators: Shutting down emulators.
+i  firestore: Stopping Firestore Emulator
+i  hub: Stopping emulator hub
+i  logging: Stopping Logging Emulator

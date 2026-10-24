@@ -1,5 +1,12 @@
 # Documentação geral — Instituto Estrela da Consciência
 
+> Edição Ateliê Celestial, 22/10/2026: o guia vigente para domínios, escopos de variáveis e publicação é [COMECE-AQUI-NETLIFY.md](COMECE-AQUI-NETLIFY.md). URLs e instruções históricas abaixo não são confirmação da nova conta. Os builds exigem ADMIN_SITE_URL (público) e MAIN_SITE_URL (painel); `npm run verify` executa a validação local completa. Aparência em `public/atelier.css` e página inicial em `public/identity.js`. Consulte [VALIDACAO-LOCAL.md](VALIDACAO-LOCAL.md) para a evidência desta entrega e limites de homologação.
+
+> Atualização de desenvolvimento local em 22/10/2026: há agora execução completa
+> na máquina, sem Netlify, com provedor de identidade de teste e Firestore Emulator.
+> Siga [LEIA-PRIMEIRO-LOCAL.md](LEIA-PRIMEIRO-LOCAL.md) para instalação, dados e testes.
+> As seções abaixo descrevem principalmente a arquitetura e configuração de produção.
+
 > Documento principal para operação, desenvolvimento, manutenção e publicação do projeto.
 >
 > Estado conferido em **20/10/2026**. Este arquivo não contém senhas, chaves privadas ou tokens.

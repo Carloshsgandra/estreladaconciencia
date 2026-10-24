@@ -2,11 +2,12 @@ import { verifiedIdentity, publicIdentity, IdentityError } from '../../../shared
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import type { Context } from '@netlify/functions';
+import {limitedText,RequestBodyError} from '../../../shared/request-body.mjs';
 import { defaults, validDate, validTime, instant, today, addDays, dateObj, minutes, safeVideo } from '../../lib/domain.js';
 
 const ACTIVE = new Set(['pendente', 'confirmado']);
 const STATUSES = new Set(['pendente', 'confirmado', 'recusado', 'cancelado', 'concluido']);
-const headers = { 'Cache-Control':'no-store, private', 'Content-Type':'application/json; charset=utf-8', 'X-Content-Type-Options':'nosniff', 'Referrer-Policy':'no-referrer' };
+const headers = { 'Cache-Control':'no-store, private', 'Content-Type':'application/json; charset=utf-8', 'X-Content-Type-Options':'nosniff', 'Referrer-Policy':'no-referrer', 'Cross-Origin-Resource-Policy':'same-origin', 'Permissions-Policy':'camera=(), microphone=(), geolocation=(), payment=()' };
 class ApiError extends Error { status:number; constructor(message:string,status=400){ super(message); this.status=status; } }
 const fail=(message:string,status=400):never=>{ throw new ApiError(message,status); };
 const response=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers});
@@ -93,8 +94,8 @@ async function loadConfiguration(db:any){
     const settings={...data.settings,bio:d.settings.bio,catalogVersion:3};
     await ref.update({services,settings,version:Number(data.version||0)+1}); data={...data,services,settings,version:Number(data.version||0)+1};
   }
-  const tarotPrice=today()>='2027-01-01'?137:97;
-  return {services:data.services.map((s:any)=>s.id==='avulsa'?{...s,price:tarotPrice}:s),settings:data.settings,rev:Number(data.version||0)};
+  const pricing={basis:priceBasis(process.env)};
+  return {services:data.services.map((s:any)=>pricedService(s,pricing)),pricing,settings:data.settings,rev:Number(data.version||0)};
 }
 
 async function listCeremonies(db:any,admin:boolean){
@@ -110,7 +111,7 @@ async function state(db:any,admin:boolean,user:any){
   const busySnap=admin?null:await db.collection('bookingSlots').where('endAt','>',Date.now()).get();
   const busy=busySnap?busySnap.docs.map((d:any)=>({date:d.data().date,time:d.data().time,duration:(d.data().endAt-d.data().startAt)/60000,status:'confirmado'})):[];
   const settings={...config.settings}; if(!admin)settings.video='';
-  return {version:1,rev:config.rev,services:config.services,settings,appointments,busy,ceremonies:await listCeremonies(db,admin),user:user?{name:user.displayName,email:user.email}:null,admin};
+  return {version:1,rev:config.rev,services:config.services,pricing:config.pricing,settings,appointments,busy,ceremonies:await listCeremonies(db,admin),user:user?{name:user.displayName,email:user.email}:null,admin};
 }
 
 function validateSlot(config:any,appointment:any,duration:number){
@@ -141,6 +142,7 @@ function validateMedicationClasses(value:any){
 }
 function validateAnamnesis(value:any,identity:any){
   if(!value||typeof value!=='object'||Array.isArray(value))fail('Preencha a ficha de anamnese.');
+  const consentReceipt=healthConsentReceipt(value,identity.userId);
   const yesNo=(v:unknown)=>{ if(typeof v!=='string'||!['sim','nao'].includes(v))fail('Responda todos os campos obrigatórios.'); return String(v); };
   const details=(answer:string,v:unknown,max=2000)=>clean(v,max,answer==='sim'); const fullName=clean(value.fullName,120,true);
   if(!validDate(value.birthDate)||value.birthDate>=today())fail('Informe uma data de nascimento válida.');
@@ -150,11 +152,12 @@ function validateAnamnesis(value:any,identity:any){
   const physicalDiagnosis=yesNo(value.physicalDiagnosis),mentalDiagnosis=yesNo(value.mentalDiagnosis),crisisHistory=yesNo(value.crisisHistory),professionalCare=yesNo(value.professionalCare),emotionalVulnerability=yesNo(value.emotionalVulnerability),currentMedication=yesNo(value.currentMedication),recentSubstances=yesNo(value.recentSubstances),priorExperience=yesNo(value.priorExperience);
   if(fullName.toLocaleLowerCase('pt-BR')!==clean(value.signature,120,true).toLocaleLowerCase('pt-BR'))fail('A assinatura digitada deve corresponder ao nome completo.');
   bool(value.truthConsent); bool(value.changeConsent); bool(value.evaluationConsent); bool(value.generalConsent); bool(value.healthDataConsent,'É necessário consentir explicitamente com o tratamento dos dados sensíveis de saúde.');
-  return {fullName,birthDate:value.birthDate,phone:phone(value.phone),email:identity.email,emergencyContact:clean(value.emergencyContact,120,true),emergencyPhone:phone(value.emergencyPhone),relationship:clean(value.relationship,80,true),physicalDiagnosis,physicalDiagnosisDetails:details(physicalDiagnosis,value.physicalDiagnosisDetails),conditions,otherCondition:conditions.includes('outra')?clean(value.otherCondition,500,true):'',currentTreatments:clean(value.currentTreatments,2000),allergies:clean(value.allergies,1000),pregnancy:yesNo(value.pregnancy),pregnancyDetails:details(yesNo(value.pregnancy),value.pregnancyDetails),mentalDiagnosis,mentalDiagnosisDetails:details(mentalDiagnosis,value.mentalDiagnosisDetails),crisisHistory,crisisHistoryDetails:details(crisisHistory,value.crisisHistoryDetails),professionalCare,professionalCareDetails:details(professionalCare,value.professionalCareDetails),recentGrief:yesNo(value.recentGrief),recentGriefDetails:details(yesNo(value.recentGrief),value.recentGriefDetails),emotionalVulnerability,emotionalVulnerabilityDetails:details(emotionalVulnerability,value.emotionalVulnerabilityDetails),currentMedication,medicationDetails:details(currentMedication,value.currentMedicationDetails??value.medicationDetails),medicationClasses:validateMedicationClasses(value.medicationClasses),recentAlcohol:yesNo(value.recentAlcohol),recentAlcoholDetails:details(yesNo(value.recentAlcohol),value.recentAlcoholDetails),recentSubstances,substanceDetails:details(recentSubstances,value.recentSubstancesDetails??value.substanceDetails),compatibilityQuestions:clean(value.compatibilityQuestions,1500),priorExperience,priorExperienceDetails:details(priorExperience,value.priorExperienceDetails),motivation:clean(value.motivation,2000,true),concerns:clean(value.concerns,1500),needs:clean(value.needs,1500),importantInformation:clean(value.importantInformation,2000),signature:clean(value.signature,120,true),truthConsent:true,changeConsent:true,evaluationConsent:true,generalConsent:true,healthDataConsent:true,submittedAt:new Date().toISOString(),schemaVersion:1};
+  return {fullName,birthDate:value.birthDate,phone:phone(value.phone),email:identity.email,emergencyContact:clean(value.emergencyContact,120,true),emergencyPhone:phone(value.emergencyPhone),relationship:clean(value.relationship||'',80),physicalDiagnosis,physicalDiagnosisDetails:details(physicalDiagnosis,value.physicalDiagnosisDetails),conditions,otherCondition:conditions.includes('outra')?clean(value.otherCondition,500,true):'',currentTreatments:clean(value.currentTreatments,2000),allergies:clean(value.allergies,1000),pregnancy:yesNo(value.pregnancy),pregnancyDetails:details(yesNo(value.pregnancy),value.pregnancyDetails),mentalDiagnosis,mentalDiagnosisDetails:details(mentalDiagnosis,value.mentalDiagnosisDetails),crisisHistory,crisisHistoryDetails:details(crisisHistory,value.crisisHistoryDetails),professionalCare,professionalCareDetails:details(professionalCare,value.professionalCareDetails),recentGrief:yesNo(value.recentGrief),recentGriefDetails:details(yesNo(value.recentGrief),value.recentGriefDetails),emotionalVulnerability,emotionalVulnerabilityDetails:details(emotionalVulnerability,value.emotionalVulnerabilityDetails),currentMedication,medicationDetails:details(currentMedication,value.currentMedicationDetails??value.medicationDetails),medicationClasses:validateMedicationClasses(value.medicationClasses),recentAlcohol:yesNo(value.recentAlcohol),recentAlcoholDetails:details(yesNo(value.recentAlcohol),value.recentAlcoholDetails),recentSubstances,substanceDetails:details(recentSubstances,value.recentSubstancesDetails??value.substanceDetails),compatibilityQuestions:clean(value.compatibilityQuestions,1500),priorExperience,priorExperienceDetails:details(priorExperience,value.priorExperienceDetails),motivation:clean(value.motivation||'',2000),concerns:clean(value.concerns,1500),needs:clean(value.needs,1500),importantInformation:clean(value.importantInformation,2000),signature:clean(value.signature,120,true),truthConsent:true,changeConsent:true,evaluationConsent:true,generalConsent:true,healthDataConsent:true,consentReceipt,submittedAt:new Date().toISOString(),schemaVersion:1};
 }
 
 async function createNormal(db:any,body:any,user:any,admin:boolean,config:any){
-  const v=body.appointment; if(!v||typeof v.id!=='string'||!/^[a-zA-Z0-9_-]{8,100}$/.test(v.id))fail('Reserva inválida.'); const service=config.services.find((s:any)=>s.id===v.service&&s.active&&s.id!=='mapa'); if(!service)fail('Este atendimento não está disponível.');
+  if(!validDate(body.appointment?.date))fail('Data de atendimento inválida.');
+  const v=body.appointment; if(!v||typeof v.id!=='string'||!/^[a-zA-Z0-9_-]{8,100}$/.test(v.id))fail('Reserva inválida.'); const service=pricedService(config.services.find((s:any)=>s.id===v.service&&s.active&&s.id!=='mapa'),{basis:priceBasis(process.env),appointmentDate:v.date}); if(!service)fail('Este atendimento não está disponível.');
   if(!['online','presencial'].includes(v.mode)||!(v.mode==='online'?config.settings.online:config.settings.presential))fail('Modalidade indisponível.'); if(!admin)bool(body.consent,'É necessário aceitar o uso dos dados para agendar.');
   const start=validateSlot(config,v,service.duration),owner=admin?`manual:${crypto.randomUUID()}`:user.userId;
   const appointment={service:service.id,title:service.title,duration:service.duration,price:service.price,date:v.date,time:v.time,mode:v.mode,name:clean(v.name,100,true),email:admin?email(v.email):user.email,phone:phone(v.phone),topic:clean(v.topic,100,true),intention:clean(v.intention||'',1500),status:'pendente',created:new Date().toISOString(),createdAt:Date.now(),startAt:start,endAt:start+service.duration*60000,userId:owner,notes:'',cards:'',video:'',location:v.mode==='presencial'?config.settings.address:'',version:0,type:'appointment'};
@@ -169,7 +172,7 @@ async function createCeremonyBooking(db:any,body:any,user:any){
 
 async function updateBooking(db:any,body:any,user:any,admin:boolean,config:any){
   const v=body.appointment;
-  if(!v?.id)fail('Reserva inválida.');
+  if(typeof v?.id!=='string'||!/^[a-zA-Z0-9_-]{8,100}$/.test(v.id))fail('Reserva inválida.');
   const ref=db.collection('bookings').doc(clean(v.id,100,true));
   await db.runTransaction(async(tx:any)=>{
     const snap=await tx.get(ref);
@@ -182,6 +185,7 @@ async function updateBooking(db:any,body:any,user:any,admin:boolean,config:any){
     const next={...old};
     if(!ACTIVE.has(old.status)&&v.status!==old.status)fail('Esta reserva já foi encerrada. Faça uma nova inscrição.',409);
     if(old.type==='ceremony'){
+      if(old.healthErasedAt&&(v.internal||v.status==='confirmado'))fail('Ficha removida. Não é possível avaliar ou aprovar esta inscrição.',409);
       if((v.ceremonyId&&v.ceremonyId!==old.ceremonyId)||(v.date&&v.date!==old.date)||(v.time&&v.time!==old.time))fail('Para trocar a cerimônia, cancele e faça uma nova inscrição.',409);
       if(v.status==='concluido'&&old.endAt>Date.now())fail('A cerimônia só pode ser concluída após o término.',409);
       if(v.status==='recusado'&&old.status!=='pendente')fail('Só inscrições pendentes podem ser recusadas.',409);
@@ -243,17 +247,37 @@ async function ceremonyAdmin(db:any,body:any){
 }
 
 async function configure(db:any,body:any,config:any){
-  if(Number(body.version)!==config.rev)fail('Configuração alterada em outra sessão.',409);const candidate={...defaults(),services:body.services,settings:body.settings},ids=new Set(['avulsa','mentoria','mapa','retorno']);if(!Array.isArray(candidate.services)||candidate.services.length!==4||new Set(candidate.services.map((s:any)=>s?.id)).size!==4||candidate.services.some((s:any)=>!ids.has(s?.id)||clean(s.title,60,true).length<2||clean(s.description,600,true).length<2||!Number.isInteger(s.duration)||s.duration<15||s.duration>240||s.duration%15||!Number.isFinite(s.price)||s.price<0||s.price>100000||typeof s.active!=='boolean'))fail('Confira os serviços.');const st=candidate.settings;if(!st||!Array.isArray(st.week)||st.week.length!==7||st.week.some((w:any)=>typeof w.on!=='boolean'||!validTime(w.start)||!validTime(w.end)||minutes(w.start)>=minutes(w.end))||!Array.isArray(st.blocked)||st.blocked.some((d:any)=>!validDate(d))||![15,30,60].includes(st.interval)||!Number.isInteger(st.lead)||st.lead<0||st.lead>168||!safeVideo(st.video||'')||clean(st.name||'',100).length>100||clean(st.bio||'',2500,true).length>2500||clean(st.address||'',400).length>400||(clean(st.whatsapp||'',16)&&!/^[1-9]{2}9\d{8}$/.test(clean(st.whatsapp||'',16).replace(/\D/g,'')))||typeof st.online!=='boolean'||typeof st.presential!=='boolean'||(st.presential&&!clean(st.address||'',400,true)))fail('Confira a disponibilidade e os dados do instituto.');const ref=db.collection('configuration').doc('main');await db.runTransaction(async(tx:any)=>{const snap=await tx.get(ref);if(Number(snap.data()?.version||0)!==Number(body.version))fail('Configuração alterada em outra sessão.',409);tx.update(ref,{services:candidate.services,settings:st,version:Number(body.version)+1});await audit(tx,db,'administrator','settings','main');});
+  if(Number(body.version)!==config.rev)fail('Configuração alterada em outra sessão.',409);const candidate={...defaults(),services:body.services,settings:body.settings},ids=new Set(['avulsa','mentoria','mapa','retorno']);if(!Array.isArray(candidate.services)||candidate.services.length<4||candidate.services.length>30||new Set(candidate.services.map((s:any)=>s?.id)).size!==candidate.services.length||[...ids,...config.services.map((s:any)=>s.id)].some(id=>!candidate.services.some((s:any)=>s?.id===id))||candidate.services.some((s:any)=>(!ids.has(s?.id)&&!(typeof s?.id==='string'&&/^extra-[a-zA-Z0-9_-]{8,80}$/.test(s.id)))||clean(s.title,60,true).length<2||clean(s.description,600,true).length<2||!Number.isInteger(s.duration)||s.duration<15||s.duration>240||s.duration%15||!Number.isFinite(s.price)||s.price<0||s.price>100000||typeof s.active!=='boolean'))fail('Confira os serviços: até 30 itens, identificadores únicos e serviços existentes preservados.');candidate.services=candidate.services.map((s:any)=>({id:s.id,title:clean(s.title,60,true),description:clean(s.description,600,true),duration:s.duration,price:Math.round(s.price*100)/100,active:s.active,art:Number.isInteger(s.art)&&s.art>=0&&s.art<=3?s.art:0}));const st=candidate.settings;if(!st||!Array.isArray(st.week)||st.week.length!==7||st.week.some((w:any)=>typeof w.on!=='boolean'||!validTime(w.start)||!validTime(w.end)||minutes(w.start)>=minutes(w.end))||!Array.isArray(st.blocked)||st.blocked.some((d:any)=>!validDate(d))||![15,30,60].includes(st.interval)||!Number.isInteger(st.lead)||st.lead<0||st.lead>168||!safeVideo(st.video||'')||clean(st.name||'',100).length>100||clean(st.bio||'',2500,true).length>2500||clean(st.address||'',400).length>400||(clean(st.whatsapp||'',16)&&!/^[1-9]{2}9\d{8}$/.test(clean(st.whatsapp||'',16).replace(/\D/g,'')))||typeof st.online!=='boolean'||typeof st.presential!=='boolean'||(st.presential&&!clean(st.address||'',400,true)))fail('Confira a disponibilidade e os dados do instituto.');const ref=db.collection('configuration').doc('main');await db.runTransaction(async(tx:any)=>{const snap=await tx.get(ref);if(Number(snap.data()?.version||0)!==Number(body.version))fail('Configuração alterada em outra sessão.',409);tx.update(ref,{services:candidate.services,settings:st,version:Number(body.version)+1});await audit(tx,db,'administrator','settings','main');});
 }
 
 async function action(db:any,body:any,admin:boolean,user:any){
   const config=await loadConfiguration(db);await rateLimit(db,admin?'administrator':user.userId);if(body.type==='config'){if(!admin)fail('Acesso administrativo necessário.',403);return configure(db,body,config);}if(body.type==='create')return createNormal(db,body,user,admin,config);if(body.type==='ceremony:book'){if(admin)fail('Use uma conta de participante.',403);return createCeremonyBooking(db,body,user);}if(body.type==='update')return updateBooking(db,body,user,admin,config);if(String(body.type).startsWith('ceremony:')){if(!admin)fail('Acesso administrativo necessário.',403);return ceremonyAdmin(db,body);}fail('Operação não reconhecida.');
 }
 
-export default async function handler(req:Request,context:Context){
-  try{const secret=process.env.ADMIN_BRIDGE_SECRET||'',provided=req.headers.get('X-Admin-Bridge')||'',admin=Boolean(secret&&provided&&await constantEqual(provided,secret));if(provided&&!admin)fail('Acesso administrativo não autorizado.',403);const raw=admin?null:await verifiedIdentity(req),user=actor(raw);if(req.method==='GET'&&new URL(req.url).pathname==='/api/session')return response({user:publicIdentity(raw),authVersion:'2026-10-20-session-v2'},raw?200:401);if(admin)allowedOrigin(req,true);if(req.method==='GET')return response(await state(database(),admin,user));if(req.method!=='POST')fail('Método não permitido.',405);allowedOrigin(req,admin);if(!admin&&!user)fail('Entre na sua conta para continuar.',401);if(!admin&&!user.confirmed)fail('Confirme seu e-mail antes de continuar.',403);if(!req.headers.get('content-type')?.toLowerCase().startsWith('application/json'))fail('Formato não permitido.',415);const rawBody=await req.text();if(new TextEncoder().encode(rawBody).byteLength>65536)fail('Conteúdo maior que o permitido.',413);let body:any;try{body=JSON.parse(rawBody);}catch{fail('Não foi possível ler a solicitação.');}if(!body||typeof body!=='object'||Array.isArray(body))fail('Solicitação inválida.');const db=database();await action(db,body,admin,user);return response(await state(db,admin,user));}
-  catch(error:any){if(error instanceof IdentityError)return response({error:error.message,code:error.code},error.status);if(error instanceof ApiError)return response({error:error.message},error.status);console.error('API operation failed',error?.name,error?.code);return response({error:'Não foi possível concluir. Tente novamente em instantes.'},500);}
-}
+export function createHandler(getDatabase=database) { return async function handler(req:Request,context:Context){
+  try{const secret=process.env.ADMIN_BRIDGE_SECRET||'',provided=req.headers.get('X-Admin-Bridge')||'',admin=Boolean(secret&&provided&&await constantEqual(provided,secret));if(provided&&!admin)fail('Acesso administrativo não autorizado.',403);const raw=admin?null:await verifiedIdentity(req),user=actor(raw);if(req.method==='GET'&&new URL(req.url).pathname==='/api/session')return response({user:publicIdentity(raw),authVersion:'2026-10-20-session-v2'},raw?200:401);if(admin)allowedOrigin(req,true);if(req.method==='GET')return response(await state(getDatabase(),admin,user));if(req.method!=='POST')fail('Método não permitido.',405);allowedOrigin(req,admin);if(!admin&&!user)fail('Entre na sua conta para continuar.',401);if(!admin&&!user.confirmed)fail('Confirme seu e-mail antes de continuar.',403);if(!req.headers.get('content-type')?.toLowerCase().startsWith('application/json'))fail('Formato não permitido.',415);const rawBody=await limitedText(req);if(new TextEncoder().encode(rawBody).byteLength>65536)fail('Conteúdo maior que o permitido.',413);let body:any;try{body=JSON.parse(rawBody);}catch{fail('Não foi possível ler a solicitação.');}if(!body||typeof body!=='object'||Array.isArray(body))fail('Solicitação inválida.');const db=getDatabase();
+if(String(body.type).startsWith('privacy:')){
+  await rateLimit(db,admin?'privacy-admin':user.userId);
+  let who;
+  if(admin){
+    const at=Number(req.headers.get('X-Admin-Reauthenticated-At'));
+    who=req.headers.get('X-Admin-Actor');
+    if(!who||!Number.isFinite(at)||at>Date.now()+5000||Date.now()-at>60000)throw new PrivacyError('Confirme novamente sua senha no painel.',401);
+  }else{const proof=await reauthenticate(req,raw,body.password);who=proof.actor;}
+  delete body.password;
+  if(body.type==='privacy:export')return response(await exportPersonalData(db,who,{admin}));
+  if(body.type==='privacy:erase'&&!admin)return response(await eraseOwnHealth(db,who,body.confirmation));
+  if(body.type==='privacy:retention'&&admin)return response(await retainHealthBatch(db,who,body));
+  throw new PrivacyError('Operação de privacidade não permitida.',403);
+}await action(db,body,admin,user);return response(await state(db,admin,user));}
+  catch(error:any){if(error instanceof PrivacyError)return response({error:error.message},error.status);if(error instanceof RequestBodyError)return response({error:error.message},error.status);if(error instanceof IdentityError)return response({error:error.message,code:error.code},error.status);if(error instanceof ApiError)return response({error:error.message},error.status);console.error('API operation failed',error?.name,error?.code);return response({error:'Não foi possível concluir. Tente novamente em instantes.'},500);}
+}; }
+
+export default createHandler();
 
 // Named exports support isolated tests; only the default handler is routed by Netlify.
 export { actor, validateAnamnesis, createCeremonyBooking, createNormal, updateBooking, ceremonyAdmin, visibleBooking, state };
+import {priceBasis, pricedService} from '../../../shared/pricing.mjs';
+import {healthConsentReceipt} from '../../../shared/consent.mjs';
+import {reauthenticate,PrivacyError} from '../../../shared/reauth.mjs';
+import {exportPersonalData,eraseOwnHealth,retainHealthBatch} from '../../../shared/privacy-store.mjs';

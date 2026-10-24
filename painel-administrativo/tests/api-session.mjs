@@ -11,7 +11,9 @@ test('API administrativa: sessão, autorização e ponte',async t=>{
  try {
   await t.test('anônimo não chama Identity nem banco',async()=>{globalThis.fetch=()=>{throw Error('unexpected fetch')};assert.equal((await handler(new Request('https://admin.example.invalid/api/session'),{})).status,401);});
   globalThis.fetch=async()=>Response.json(confirmed);
+  await t.test('allowlist vazia retorna configuração 503 sem autorizar sessão',async()=>{process.env.ADMIN_EMAILS='';const res=await handler(request(),{});assert.equal(res.status,503);assert.equal((await res.json()).code,'ADMIN_CONFIGURATION');process.env.ADMIN_EMAILS=confirmed.email;});
   await t.test('sessão independe da configuração da ponte',async()=>{const res=await handler(request(),{});assert.equal(res.status,200);const data=await res.json();assert.equal(data.user.email,confirmed.email);assert.equal(data.user.confirmed_at,undefined);assert.match(res.headers.get('cache-control'),/no-store/);});
+  await t.test('role no perfil não substitui a lista explícita de administradores',async()=>{globalThis.fetch=async()=>Response.json({...confirmed,email:'other@example.invalid',app_metadata:{roles:['admin']}});assert.equal((await handler(request(),{})).status,403);});
   await t.test('conta sem permissão recebe 403',async()=>{globalThis.fetch=async()=>Response.json({...confirmed,email:'other@example.invalid'});assert.equal((await handler(request(),{})).status,403);});
   await t.test('email pendente recebe erro específico',async()=>{globalThis.fetch=async()=>Response.json({...confirmed,confirmed_at:null});const res=await handler(request(),{});assert.equal(res.status,403);assert.equal((await res.json()).code,'EMAIL_UNCONFIRMED');});
   await t.test('sessão expirada recebe 401',async()=>{globalThis.fetch=async()=>new Response('',{status:401});assert.equal((await handler(request(),{})).status,401);});

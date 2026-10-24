@@ -1,0 +1,60 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> iec-painel-administrativo-netlify@1.0.0 test
+> node --test tests/*.mjs
+
+▶ API administrativa: sessão, autorização e ponte
+  ✔ anônimo não chama Identity nem banco (7.396474ms)
+  ✔ sessão independe da configuração da ponte (3.470901ms)
+  ✔ role no perfil não substitui a lista explícita de administradores (1.802896ms)
+  ✔ conta sem permissão recebe 403 (1.355053ms)
+  ✔ email pendente recebe erro específico (1.829043ms)
+  ✔ sessão expirada recebe 401 (0.977135ms)
+  ✔ ponte ausente não é tratada como falha de senha (1.316871ms)
+  ✔ POST de outra origem é bloqueado (1.686721ms)
+✔ API administrativa: sessão, autorização e ponte (24.391949ms)
+✔ anônimo não faz consulta de identidade (3.986216ms)
+✔ cookie é verificado na Identity da própria origem (4.086106ms)
+✔ Bearer é verificado e não confia em cookies conflitantes (0.578491ms)
+✔ cookie malformado e Authorization inválida falham fechados (1.130763ms)
+✔ Identity HTTP 401 nunca autentica (0.755067ms)
+✔ Identity HTTP 403 nunca autentica (0.622752ms)
+✔ Identity HTTP 429 nunca autentica (0.379469ms)
+✔ Identity HTTP 500 nunca autentica (2.807453ms)
+✔ falha de rede e JSON inválido não viram conta confirmada (2.041541ms)
+✔ usuário realmente não confirmado recebe erro específico (1.574612ms)
+✔ somente e-mail da lista explícita do servidor autoriza admin (0.339233ms)
+✔ retorno não permite origem externa nem ciclo para login/API (0.385101ms)
+✔ preflight rejeita sessão ausente, 403 e resposta HTML (1.998407ms)
+✔ mensagem de limite não promete prazo inventado (0.525318ms)
+✔ painel login valida API antes de navegar (6.174263ms)
+✔ painel sessão local não cria redirecionamento automático (0.351848ms)
+✔ painel preflight 401 deixa erro visível (1.350671ms)
+✔ painel preflight 403 deixa erro visível (1.742175ms)
+✔ painel preflight 503 deixa erro visível (0.654154ms)
+✔ site login valida API antes de navegar (0.790084ms)
+✔ site sessão local não cria redirecionamento automático (0.303843ms)
+✔ site preflight 401 deixa erro visível (0.713148ms)
+✔ site preflight 403 deixa erro visível (0.779733ms)
+✔ site preflight 503 deixa erro visível (0.681865ms)
+✔ invite: só consome token ao salvar e sincroniza cookie com login (0.969917ms)
+✔ invite: senha divergente não consome link (0.376218ms)
+✔ reset: só consome token ao salvar e sincroniza cookie com login (0.448346ms)
+✔ reset: senha divergente não consome link (0.266816ms)
+✔ senha incorreta permanece no formulário (0.493523ms)
+✔ cadastro pede confirmação e não navega como autenticado (0.388519ms)
+✔ recuperação evita pedidos repetidos imediatos (2.123819ms)
+✔ logout não verifica nem redireciona à área protegida (0.947844ms)
+✔ troca de senha exige sessão e encerra sessão depois de salvar (0.498027ms)
+✔ troca sem sessão não oferece formulário de nova senha (0.718571ms)
+✔ confirmação chama callback e valida sessão (0.591648ms)
+✔ retorno de convite na raiz marca redirecionamento antes de inicializar app (28.338259ms)
+✔ renovação é aguardada e chamadas concorrentes compartilham uma operação (0.470527ms)
+ℹ tests 46
+ℹ suites 0
+ℹ pass 46
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 238.758757

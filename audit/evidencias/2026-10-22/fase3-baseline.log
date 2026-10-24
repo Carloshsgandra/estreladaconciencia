@@ -1,0 +1,177 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> test
+> npm --prefix site-principal test && npm --prefix painel-administrativo test
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> iec-site-principal-netlify@1.0.0 test
+> node --test tests/*.mjs
+
+✔ site-principal: carrega JSON e usa credenciais da mesma origem (10.487616ms)
+✔ site-principal: HTML 200 gera mensagem legível sem substituir o estado (2.970795ms)
+✔ site-principal: HTML 404 gera mensagem legível sem substituir o estado (4.282153ms)
+✔ site-principal: HTML 500 gera mensagem legível sem substituir o estado (1.822826ms)
+✔ site-principal: rejeita JSON quebrado e dados incompletos (6.185134ms)
+✔ site-principal: preserva status de autenticação e mensagens do servidor (1.9383ms)
+✔ site-principal: trata falha de rede (1.779207ms)
+✔ site-principal: encerra requisição demorada (13.609252ms)
+✔ site-principal: conflito atualiza agenda sem repetir POST (3.775487ms)
+✔ site-principal: erro de gravação não confirma dados no navegador (2.336342ms)
+✔ painel-administrativo: carrega JSON e usa credenciais da mesma origem (2.425527ms)
+✔ painel-administrativo: HTML 200 gera mensagem legível sem substituir o estado (2.202536ms)
+✔ painel-administrativo: HTML 404 gera mensagem legível sem substituir o estado (2.023655ms)
+✔ painel-administrativo: HTML 500 gera mensagem legível sem substituir o estado (3.615876ms)
+✔ painel-administrativo: rejeita JSON quebrado e dados incompletos (5.156848ms)
+✔ painel-administrativo: preserva status de autenticação e mensagens do servidor (1.841677ms)
+✔ painel-administrativo: trata falha de rede (3.089279ms)
+✔ painel-administrativo: encerra requisição demorada (7.225794ms)
+✔ painel-administrativo: conflito atualiza agenda sem repetir POST (2.900977ms)
+✔ painel-administrativo: erro de gravação não confirma dados no navegador (1.333441ms)
+✔ landing renderiza catálogo real sem mensalidade indevida (4.084086ms)
+✔ catálogo inativo e vazio não cria oferta fictícia (0.976629ms)
+✔ nome, descrição e biografia são escapados (0.934936ms)
+✔ modalidade e antecedência refletem configuração (0.83132ms)
+✔ link do serviço codifica identificador (1.285107ms)
+✔ serviço extra ativo aparece com link próprio e some ao desativar (1.457054ms)
+✔ URL de build é explícita e normalizada (0.44889ms)
+✔ URL de build rejeita protocolo, credencial, caminho e fragmento (0.209096ms)
+✔ preflight recusa configuração ausente e segredo mascarado (6.085369ms)
+✔ anônimo não faz consulta de identidade (4.441763ms)
+✔ cookie é verificado na Identity da própria origem (5.350767ms)
+✔ Bearer é verificado e não confia em cookies conflitantes (0.894455ms)
+✔ cookie malformado e Authorization inválida falham fechados (3.304226ms)
+✔ Identity HTTP 401 nunca autentica (3.37418ms)
+✔ Identity HTTP 403 nunca autentica (0.541972ms)
+✔ Identity HTTP 429 nunca autentica (1.604335ms)
+✔ Identity HTTP 500 nunca autentica (4.208835ms)
+✔ falha de rede e JSON inválido não viram conta confirmada (2.71163ms)
+✔ usuário realmente não confirmado recebe erro específico (0.857412ms)
+✔ somente e-mail da lista explícita do servidor autoriza admin (0.721522ms)
+✔ retorno não permite origem externa nem ciclo para login/API (0.300419ms)
+✔ preflight rejeita sessão ausente, 403 e resposta HTML (3.599684ms)
+✔ mensagem de limite não promete prazo inventado (0.499402ms)
+✔ painel login valida API antes de navegar (4.122432ms)
+✔ painel sessão local não cria redirecionamento automático (0.42589ms)
+✔ painel preflight 401 deixa erro visível (1.140319ms)
+✔ painel preflight 403 deixa erro visível (0.968662ms)
+✔ painel preflight 503 deixa erro visível (0.507995ms)
+✔ site login valida API antes de navegar (0.512751ms)
+✔ site sessão local não cria redirecionamento automático (0.173461ms)
+✔ site preflight 401 deixa erro visível (0.391528ms)
+✔ site preflight 403 deixa erro visível (1.063536ms)
+✔ site preflight 503 deixa erro visível (0.565395ms)
+✔ invite: só consome token ao salvar e sincroniza cookie com login (0.972017ms)
+✔ invite: senha divergente não consome link (0.286013ms)
+✔ reset: só consome token ao salvar e sincroniza cookie com login (0.594641ms)
+✔ reset: senha divergente não consome link (0.202742ms)
+✔ senha incorreta permanece no formulário (0.260567ms)
+✔ cadastro pede confirmação e não navega como autenticado (0.513292ms)
+✔ recuperação evita pedidos repetidos imediatos (0.234262ms)
+✔ logout não verifica nem redireciona à área protegida (0.355064ms)
+✔ troca de senha exige sessão e encerra sessão depois de salvar (3.215864ms)
+✔ troca sem sessão não oferece formulário de nova senha (0.44323ms)
+✔ confirmação chama callback e valida sessão (0.99956ms)
+✔ retorno de convite na raiz marca redirecionamento antes de inicializar app (31.046152ms)
+✔ renovação é aguardada e chamadas concorrentes compartilham uma operação (0.799841ms)
+✔ catálogo, textos e regra promocional permanecem no servidor (2.733073ms)
+✔ datas, horários e links mantêm validação (39.480985ms)
+✔ Firestore nega todo acesso direto do navegador (0.600445ms)
+✔ última vaga usa transação e ID determinístico (0.4196ms)
+✔ cancelamento libera vaga e duplicidade ativa é recusada (0.540717ms)
+✔ cerimônia fechada e passada são recusadas (0.27272ms)
+✔ anamnese exige detalhes, assinatura e consentimento sensível (0.406812ms)
+✔ notas internas não chegam ao participante nem à disponibilidade (0.2432ms)
+✔ API exige identidade, origem, JSON, limite e segredo com comparação constante (0.413453ms)
+✔ Tarô e Reiki reservam todos os intervalos na transação (0.68679ms)
+✔ consentimentos, assinatura, enums, detalhes e email autenticado (22.286785ms)
+✔ notas internas não chegam ao participante (0.304038ms)
+✔ contexto assinado da Identity aceita o identificador sub (0.909246ms)
+✔ ponte sem segredo válido retorna JSON 403 (9.186517ms)
+✔ sessão pública exige identidade validada e não consulta banco (4.434276ms)
+﹣ Firestore: concorrência, cancelamento, duplicidade, propriedade e histórico (0.295917ms) # SKIP
+﹣ Firestore: Tarô e Reiki preservam exclusão mútua e liberação de horários (0.105064ms) # SKIP
+✔ metadados e sitemap acompanham a origem real do deploy (2.525491ms)
+✔ rotas inexistentes alcançam a página 404 de cada site (0.938048ms)
+✔ build rejeita política de preço desconhecida antes de gerar arquivos (100.599071ms)
+✔ site-principal: resumo usa política do servidor e data selecionada (36.378454ms)
+✔ painel-administrativo: resumo usa política do servidor e data selecionada (1.657952ms)
+✔ preço com relógio simulado 2027-01-01T02:59:59Z: R$97 (1.110637ms)
+✔ preço com relógio simulado 2027-01-01T03:00:00Z: R$137 (0.755283ms)
+✔ reserva antes da virada para atendimento depois: duas políticas explícitas (0.797883ms)
+✔ preço rejeita data inválida e preserva outros serviços (1.855462ms)
+✔ publicação exige dois projetos reais distintos e IDs explícitos (1.729123ms)
+✔ limite é aplicado em bytes, inclusive texto multibyte (6.761384ms)
+✔ stream acima do limite é cancelado antes de leitura completa (0.953136ms)
+✔ comprimento declarado excessivo e UTF-8 inválido são recusados (1.07052ms)
+ℹ tests 96
+ℹ suites 0
+ℹ pass 94
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 2
+ℹ todo 0
+ℹ duration_ms 611.163103
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> iec-painel-administrativo-netlify@1.0.0 test
+> node --test tests/*.mjs
+
+✔ allowlist normaliza lista; não aceita configuração vazia ou malformada (1.966063ms)
+✔ conta válida fora da allowlist não é autorizada por role (0.51179ms)
+▶ API administrativa: sessão, autorização e ponte
+  ✔ anônimo não chama Identity nem banco (4.001352ms)
+  ✔ allowlist vazia retorna configuração 503 sem autorizar sessão (1.965314ms)
+  ✔ sessão independe da configuração da ponte (1.385595ms)
+  ✔ role no perfil não substitui a lista explícita de administradores (4.306201ms)
+  ✔ conta sem permissão recebe 403 (1.520429ms)
+  ✔ email pendente recebe erro específico (1.183886ms)
+  ✔ sessão expirada recebe 401 (0.648553ms)
+  ✔ ponte ausente não é tratada como falha de senha (0.757611ms)
+  ✔ POST de outra origem é bloqueado (1.410881ms)
+✔ API administrativa: sessão, autorização e ponte (20.626653ms)
+✔ anônimo não faz consulta de identidade (3.694843ms)
+✔ cookie é verificado na Identity da própria origem (5.065208ms)
+✔ Bearer é verificado e não confia em cookies conflitantes (0.921349ms)
+✔ cookie malformado e Authorization inválida falham fechados (1.278622ms)
+✔ Identity HTTP 401 nunca autentica (1.07418ms)
+✔ Identity HTTP 403 nunca autentica (0.718045ms)
+✔ Identity HTTP 429 nunca autentica (0.446213ms)
+✔ Identity HTTP 500 nunca autentica (2.2643ms)
+✔ falha de rede e JSON inválido não viram conta confirmada (2.090489ms)
+✔ usuário realmente não confirmado recebe erro específico (1.056876ms)
+✔ somente e-mail da lista explícita do servidor autoriza admin (0.668986ms)
+✔ retorno não permite origem externa nem ciclo para login/API (0.407549ms)
+✔ preflight rejeita sessão ausente, 403 e resposta HTML (1.864426ms)
+✔ mensagem de limite não promete prazo inventado (0.414676ms)
+✔ painel login valida API antes de navegar (3.249208ms)
+✔ painel sessão local não cria redirecionamento automático (0.658191ms)
+✔ painel preflight 401 deixa erro visível (1.801435ms)
+✔ painel preflight 403 deixa erro visível (1.752849ms)
+✔ painel preflight 503 deixa erro visível (0.909371ms)
+✔ site login valida API antes de navegar (0.538193ms)
+✔ site sessão local não cria redirecionamento automático (0.290574ms)
+✔ site preflight 401 deixa erro visível (0.621997ms)
+✔ site preflight 403 deixa erro visível (0.961193ms)
+✔ site preflight 503 deixa erro visível (0.818473ms)
+✔ invite: só consome token ao salvar e sincroniza cookie com login (1.150256ms)
+✔ invite: senha divergente não consome link (0.34427ms)
+✔ reset: só consome token ao salvar e sincroniza cookie com login (0.513733ms)
+✔ reset: senha divergente não consome link (0.187417ms)
+✔ senha incorreta permanece no formulário (0.493897ms)
+✔ cadastro pede confirmação e não navega como autenticado (0.620092ms)
+✔ recuperação evita pedidos repetidos imediatos (0.341117ms)
+✔ logout não verifica nem redireciona à área protegida (1.450027ms)
+✔ troca de senha exige sessão e encerra sessão depois de salvar (0.415657ms)
+✔ troca sem sessão não oferece formulário de nova senha (0.654465ms)
+✔ confirmação chama callback e valida sessão (0.604611ms)
+✔ retorno de convite na raiz marca redirecionamento antes de inicializar app (20.498723ms)
+✔ renovação é aguardada e chamadas concorrentes compartilham uma operação (0.394299ms)
+ℹ tests 49
+ℹ suites 0
+ℹ pass 49
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 216.775965

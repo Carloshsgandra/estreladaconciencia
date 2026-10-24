@@ -28,4 +28,27 @@ test('limite de alterações bloqueia a 41ª tentativa',async()=>{const key='aud
 test('INVARIANTE: horário de abertura fora da grade não permite sobreposição',async()=>{const {c,date}=await setup(),a=body(date);await api.createNormal(db,a,user,false,c);const settings=structuredClone(c.settings);settings.week.forEach(w=>w.start='09:10');await api.configure(db,{version:0,services:c.services,settings},c);const revised={...c,settings,rev:1};await assert.rejects(api.createNormal(db,body(date,'10:10'),user,false,revised),e=>e.status===409);});
 test('INVARIANTE: remarcação parcialmente sobreposta atualiza todos os locks',async()=>{const {c,date}=await setup(),b=body(date);await api.createNormal(db,b,user,false,c);const old=await stored(b.appointment.id);await api.updateBooking(db,{version:0,appointment:{...old,id:b.appointment.id,time:'10:30',status:'pendente'}},user,false,c);const next=await stored(b.appointment.id);for(const id of next.slotIds){const slot=(await db.doc('bookingSlots/'+id).get()).data();assert.equal(slot.startAt,next.startAt,'existing lock retains old start');assert.equal(slot.endAt,next.endAt,'existing lock retains old end');}});
 test('Firestore REST rejeita leitura direta sem identidade administrativa',async()=>{const r=await fetch('http://127.0.0.1:8085/v1/projects/demo-estrela-validation/databases/(default)/documents/bookings');assert.equal(r.status,403);});
+test('serviço extra persiste, reserva com preço do servidor e preserva histórico após edição e desativação',async()=>{
+ const {c,date}=await setup();
+ const extra={id:'extra-'+crypto.randomUUID(),title:'Atendimento extra',description:'Descrição do novo atendimento',duration:45,price:125,active:true,art:1};
+ await api.configure(db,{version:0,services:[...c.services,extra],settings:c.settings},c);
+ const first=await api.state(db,true,null);assert.equal(first.services.length,5);assert.equal(first.services.find(x=>x.id===extra.id).title,extra.title);
+ const reservation=body(date,'10:00',{service:extra.id,price:1,duration:15});
+ await api.createNormal(db,reservation,user,false,first);
+ const before=await stored(reservation.appointment.id);assert.equal(before.price,125);assert.equal(before.duration,45);assert.equal(before.slotIds.length,3);
+ await assert.rejects(api.createNormal(db,body(date,'10:30'),user,false,first),e=>e.status===409);
+ const edited=first.services.map(x=>x.id===extra.id?{...x,title:'Título novo',price:200,duration:90,active:false}:x);
+ await api.configure(db,{version:first.rev,services:edited,settings:first.settings},first);
+ const next=await api.state(db,true,null);await assert.rejects(api.createNormal(db,body(date,'14:00',{service:extra.id}),user,false,next));
+ assert.deepEqual(await stored(reservation.appointment.id),before);
+ assert.equal(next.services.find(x=>x.id==='mentoria').title,'Reiki');
+});
+test('catálogo rejeita IDs duplicados, exclusão, excesso, formato inválido e duração inválida sem gravar',async()=>{
+ const {c}=await setup();const extra={id:'extra-12345678',title:'Extra',description:'Descrição',duration:60,price:90,active:true,art:0};
+ const attempts=[ [...c.services,extra,extra],c.services.slice(1),[...c.services,{...extra,id:'../bad-id'}],[...c.services,{...extra,duration:17}],[...c.services,...Array.from({length:27},(_,i)=>({...extra,id:'extra-12345678-'+i}))] ];
+ for(const services of attempts){await assert.rejects(api.configure(db,{version:0,services,settings:c.settings},c));assert.equal((await db.doc('configuration/main').get()).data().version,0);}
+ await api.configure(db,{version:0,services:[...c.services,extra],settings:c.settings},c);
+ const updated=await api.state(db,true,null);
+ await assert.rejects(api.configure(db,{version:updated.rev,services:c.services,settings:updated.settings},updated));
+});
 test.after(async()=>{await db.terminate();await rm(artifact,{force:true});});

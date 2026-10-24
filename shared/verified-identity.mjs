@@ -1,5 +1,6 @@
 // Verify with this site's Identity service, never trust decoded JWT payloads,
 // user_metadata roles, or runtime globals as proof of a confirmed account.
+import {adminEmails} from './admin-config.mjs';
 export class IdentityError extends Error {
   constructor(message, status, code) { super(message); this.status=status; this.code=code; }
 }
@@ -35,9 +36,11 @@ export async function verifiedIdentity(request, fetcher=fetch) {
 }
 export function adminAllowed(user, env) {
   if(!user?.email)return false;
-  const emails=String(env.ADMIN_EMAILS||env.ADMIN_EMAIL||'').split(',').map(x=>x.trim().toLowerCase()).filter(Boolean);
-  const roles=user.app_metadata?.roles;
-  return emails.includes(user.email.trim().toLowerCase())||(Array.isArray(roles)&&roles.includes('admin'));
+  const emails=adminEmails(env);
+  // This is a separate administrative site. Access is deliberately an explicit
+  // server-side allowlist, rather than a profile field or a role claim that a
+  // future identity-provider setting might expose to end users.
+  return emails.includes(user.email.trim().toLowerCase());
 }
 export function publicIdentity(user) {
   return user?{id:user.id,email:user.email,name:user.user_metadata?.full_name||user.email}:null;

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#080e20"/>
+  <circle cx="600" cy="290" r="183" fill="none" stroke="#d7b96e" opacity=".58"/>
+  <circle cx="600" cy="290" r="148" fill="none" stroke="#d7b96e" opacity=".4"/>
+  <path d="M600 125 638 251 765 290 638 328 600 455 562 328 435 290 562 251Z" fill="#e4c57c"/>
+  <circle cx="600" cy="290" r="29" fill="#fff3c7"/>
+  <text x="600" y="541" text-anchor="middle" fill="#e8c982" font-family="Georgia,serif" font-size="61" letter-spacing="8">I.E.C.</text>
+  <text x="600" y="586" text-anchor="middle" fill="#f2eee4" font-family="Arial,sans-serif" font-size="20" letter-spacing="4">INSTITUTO ESTRELA DA CONSCIÊNCIA</text>
+</svg>

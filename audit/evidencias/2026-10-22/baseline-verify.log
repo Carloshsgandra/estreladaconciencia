@@ -1,0 +1,8 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> verify
+> firebase emulators:exec --only firestore --project demo-estrela-validation --config firebase.test.json "node local/verify.mjs"
+
+i  emulators: Shutting down emulators.
+
+Error: firebase-tools no longer supports Java version before 21. Please install a JDK at version 21 or above to get a compatible runtime.

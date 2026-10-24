@@ -22,8 +22,8 @@ async function config(){
   if(!result.meta.changes)return config();
   row!.version++;
  }
- const tarotPrice=today()>='2027-01-01'?137:97;
- data.services=data.services.map((service:any)=>service.id==='avulsa'?{...service,price:tarotPrice}:service);
+ const currentPrice=tarotPrice();
+ data.services=data.services.map((service:any)=>service.id==='avulsa'?{...service,price:currentPrice}:service);
  return {...data,rev:row!.version};
 }
 async function state(admin:boolean,user:any){const c=await config();if(user&&!admin){await E.DB.prepare("UPDATE bookings SET user_id=?,version=version+1 WHERE user_id LIKE 'manual:%' AND email=?").bind(user.userId,user.email.toLowerCase()).run()}
@@ -57,3 +57,4 @@ async function action(body:any,admin:boolean,user:any){const c=await config();co
 export async function serve(req:Request,admin=false){try{if(!E.DB)fail('O banco está temporariamente indisponível.',503);let user:any=null;if(admin){if(!E.ADMIN_BRIDGE_SECRET||!await constantEqual(req.headers.get('X-Admin-Bridge')||'',E.ADMIN_BRIDGE_SECRET))fail('Acesso administrativo não autorizado.',403)}else user=await getChatGPTUser();
  if(req.method==='GET')return respond(await state(admin,user));if(req.method!=='POST')fail('Método não permitido.',405);if(!admin){checkOrigin(req);if(!user)fail('Entre na sua conta para continuar.',401)}if(!req.headers.get('content-type')?.startsWith('application/json'))fail('Formato não permitido.',415);const raw=await req.text();if(raw.length>40000)fail('Conteúdo maior que o permitido.',413);let body:any;try{body=JSON.parse(raw)}catch{fail('Não foi possível ler a solicitação.')}await action(body,admin,user);return respond(await state(admin,user));
  }catch(error:any){if(error instanceof ApiError)return respond({error:error.message},error.status);const msg=String(error?.message||'');if(msg.includes('booking_overlap')||msg.includes('UNIQUE constraint'))return respond({error:'Este horário acabou de ser reservado. Atualize a agenda e escolha outro.'},409);console.error('API operation failed',error?.name);return respond({error:'Não foi possível concluir. Tente novamente em instantes.'},500)}}
+import {tarotPrice} from '../../shared/pricing.mjs';

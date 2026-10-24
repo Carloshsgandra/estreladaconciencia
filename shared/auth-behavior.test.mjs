@@ -25,11 +25,10 @@ test('falha de rede e JSON inválido não viram conta confirmada',async()=>{
   for(const fetcher of [async()=>{throw Error('network');},async()=>new Response('not json')])await assert.rejects(verifiedIdentity(request({cookie:'nf_jwt=test'}),fetcher),e=>e.status===503);
 });
 test('usuário realmente não confirmado recebe erro específico',async()=>{await assert.rejects(verifiedIdentity(request({cookie:'nf_jwt=test'}),async()=>Response.json({...account,confirmed_at:null})),e=>e.code==='EMAIL_UNCONFIRMED');});
-test('somente lista ou roles gerenciadas no servidor autorizam admin',()=>{
+test('somente e-mail da lista explícita do servidor autoriza admin',()=>{
   assert.equal(adminAllowed(account,{ADMIN_EMAILS:' OTHER@example.invalid, PERSON@example.invalid '}),true);
   assert.equal(adminAllowed(account,{ADMIN_EMAIL:account.email}),true);
-  assert.equal(adminAllowed({...account,app_metadata:{roles:['admin']}},{}),true);
-  for(const patch of [{user_metadata:{roles:['admin']}},{role:'admin'},{app_metadata:{roles:'not-admin'}}])assert.equal(adminAllowed({...account,...patch},{}),false);
+  for(const patch of [{user_metadata:{roles:['admin']}},{role:'admin'},{app_metadata:{roles:['admin']}},{app_metadata:{roles:'not-admin'}}])assert.equal(adminAllowed({...account,...patch},{ADMIN_EMAILS:'someone-else@example.invalid'}),false);
   assert.equal(adminAllowed(account,{ADMIN_EMAILS:'wrong@example.invalid',ADMIN_EMAIL:account.email}),false);
 });
 test('retorno não permite origem externa nem ciclo para login/API',()=>{

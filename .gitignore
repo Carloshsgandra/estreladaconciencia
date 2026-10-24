@@ -9,3 +9,7 @@ dist-netlify/
 
 # Firebase CLI and emulator diagnostics may contain sensitive metadata.
 *-debug.log
+.local-data/
+.local-build/
+.deploy/
+.deploy-targets.json

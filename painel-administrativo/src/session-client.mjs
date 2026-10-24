@@ -1,3 +1,9 @@
 import { getUser, refreshSession } from '@netlify/identity';
 import { installSessionBridge } from '../../shared/session-bridge.mjs';
 installSessionBridge({getUser,refreshSession});
+import {pricedService} from '../../shared/pricing.mjs';
+window.iecPricedService=pricedService;
+import {HEALTH_CONSENT_TEXT,HEALTH_CONSENT_VERSION} from '../../shared/consent.mjs';
+import {privacyAction} from '../../shared/privacy-browser.mjs';
+window.iecHealthConsent={text:HEALTH_CONSENT_TEXT,version:HEALTH_CONSENT_VERSION};
+window.iecPrivacyAction=privacyAction;

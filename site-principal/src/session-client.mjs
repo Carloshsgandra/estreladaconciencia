@@ -1,6 +1,8 @@
 import { getUser, refreshSession } from '@netlify/identity';
 import { installSessionBridge } from '../../shared/session-bridge.mjs';
 installSessionBridge({getUser,refreshSession});
+import {installPhoneInputs} from '../../shared/phone-input.mjs';
+installPhoneInputs(document);
 import {pricedService} from '../../shared/pricing.mjs';
 window.iecPricedService=pricedService;
 import {HEALTH_CONSENT_TEXT,HEALTH_CONSENT_VERSION} from '../../shared/consent.mjs';

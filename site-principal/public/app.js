@@ -21,7 +21,7 @@ const defaults=()=>({version:1,rev:0,services:[{id:'avulsa',title:'Jogo de Tarô
 let memory=defaults(),toastTimer,clientEmail='',adminTab='agenda',adminFilter='todos',searchTerm='';
 let booking={step:0,service:'avulsa',date:'',time:'',mode:'online',view:'cards',offset:0,customer:{name:'',email:'',phone:'',topic:'',intention:''},consent:false};
 function read(){return memory}
-async function requestApi(path, options = {}) {
+async function requestApi(path, options = {}, responseType = 'state') {
  if(typeof window!=='undefined'&&window.iecEnsureSession)await window.iecEnsureSession();
  const controller = new AbortController();
  const timer = setTimeout(() => controller.abort(), 20000);
@@ -40,7 +40,13 @@ async function requestApi(path, options = {}) {
    error.status = res.status;
    throw error;
   }
+  if(responseType==='privacy'){
+   const type=JSON.parse(options.body||'{}').type;
+   const valid=type==='privacy:export'?Array.isArray(data?.records)&&typeof data.scope==='string'&&typeof data.exportedAt==='string':Number.isInteger(data?.removed)&&data.removed>=0;
+   if(!valid)throw Error('A operação de privacidade retornou dados incompletos. Tente novamente.');
+  }else{
   if (!data || !Array.isArray(data.services) || !Array.isArray(data.appointments) || !data.settings || typeof data.settings !== 'object') throw Error('Os dados da agenda estão incompletos. Tente novamente em instantes.');
+  }
   return data;
  } catch (error) {
   if (error.name === 'AbortError') throw Error('A agenda demorou para responder. Tente novamente.');
@@ -133,11 +139,19 @@ function reschedule(id,admin){const s=read(),a=s.appointments.find(x=>x.id===id)
 let motionObserver;
 function enhanceMotion(){
  const main=$('#main');if(!main)return;
+ const intentions={Relações:'Um espaço para reconhecer vínculos, limites e o que pede conversa.',Caminhos:'Um convite para observar possibilidades sem entregar suas escolhas a ninguém.',Pausa:'Nem toda resposta precisa ser imediata. Você pode chegar apenas para se escutar.',Presença:'Comece pelo que está vivo agora — uma sensação, uma pergunta ou um desejo.'};
+ $$('[data-intention]',main).forEach(button=>button.addEventListener('click',()=>{
+   const value=button.dataset.intention;
+   $$('[data-intention]',main).forEach(item=>item.setAttribute('aria-pressed',String(item===button)));
+   const result=$('[data-intention-result]',main);if(result)result.textContent=intentions[value]||'';
+ }));
  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+ const motionButton=$('[data-motion-toggle]',main),table=$('.celestial-table',main);
+ if(motionButton){motionButton.hidden=reduced;motionButton.onclick=()=>{const paused=table.classList.toggle('motion-paused');motionButton.setAttribute('aria-pressed',String(paused));motionButton.textContent=paused?'Retomar movimento':'Pausar movimento';};}
  const nodes=$$('.section-heading,.service,.about-grid>* ,.steps-layout>*,.step-row,.faq-list details,.closing>*',main);
  nodes.forEach((node,index)=>{node.classList.add('reveal');node.style.setProperty('--reveal-delay',Math.min(index%4,3)*80+'ms')});
  motionObserver?.disconnect();
- if(reduced){nodes.forEach(node=>node.classList.add('is-visible'));return}
+ if(reduced||typeof IntersectionObserver==='undefined'){nodes.forEach(node=>node.classList.add('is-visible'));return}
  motionObserver=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('is-visible');motionObserver.unobserve(entry.target)}}),{threshold:.12,rootMargin:'0px 0px -7%'});
  nodes.forEach(node=>motionObserver.observe(node));
  $$('.service',main).forEach(card=>{
@@ -148,6 +162,7 @@ function enhanceMotion(){
    art.addEventListener('pointermove',event=>{if(event.pointerType==='touch')return;const rect=art.getBoundingClientRect();art.style.setProperty('--hero-x',((event.clientX-rect.left)/rect.width-.5)*12+'px');art.style.setProperty('--hero-y',((event.clientY-rect.top)/rect.height-.5)*10+'px')});
    art.addEventListener('pointerleave',()=>{art.style.setProperty('--hero-x','0px');art.style.setProperty('--hero-y','0px')});
  }
+
 }
 let previousRoute='';
 function render(){const hash=(location.hash||(IS_ADMIN?'#admin':'#home')).slice(1);const route=hash.split('/')[0];const main=$('#main');const scroll=window.scrollY;const same=previousRoute===route;read();if(route==='admin'&&!IS_ADMIN){location.href=ADMIN_URL;return}if(route==='book'){if(!['online','presencial'].includes(booking.mode)||(booking.mode==='online'&&!read().settings.online)||(booking.mode==='presencial'&&!read().settings.presential))booking.mode=read().settings.online?'online':'presencial';main.innerHTML=bookPage();bindBook()}else if(route==='client'){main.innerHTML=clientPage();}else if(route==='admin'){main.innerHTML=adminPage();bindAdmin()}else main.innerHTML=home();bindAppointments(route==='admin');$$('[data-contact]').forEach(b=>b.onclick=contact);$$('[data-privacy]').forEach(b=>b.onclick=privacy);syncWhatsapp();bindPrivacyTools();$('#year').textContent=new Date().getFullYear();if(!same){main.classList.remove('fade-in');void main.offsetWidth;main.classList.add('fade-in')}enhanceMotion();previousRoute=route;if(['services','about','how','faq','cerimonias'].includes(route))requestAnimationFrame(()=>$('#'+route)?.scrollIntoView({behavior:'auto'}));else if(same)window.scrollTo(0,scroll);else window.scrollTo(0,0)}
@@ -158,7 +173,7 @@ if(location.hash.startsWith('#book/')){const id=location.hash.split('/')[1];if(r
 if(!window.iecAuthRedirect){if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initialize,{once:true});else initialize();}
 window.addEventListener('focus',()=>fetchState().catch(()=>{}));
 function openPrivacyAction(action){
- const common={modal,requestApi,download,document,refresh:async()=>{await fetchState();render()}};
+ const common={modal,requestApi:(path,options)=>requestApi(path,options,'privacy'),download,document,refresh:async()=>{await fetchState();render()}};
  const options=action==='erase'?{type:'privacy:erase',title:'Excluir minhas fichas de saúde',warning:'Esta operação remove suas fichas de saúde, avaliações e textos associados e cancela inscrições ainda ativas. Não pode ser desfeita pela aplicação. Sua conta e os dados básicos das reservas permanecem. Cópias já exportadas e backups precisam de atendimento do controlador.',confirmation:'EXCLUIR_MINHAS_FICHAS'}:action==='retention'||action==='retention-preview'?{type:'privacy:retention',title:'Retenção de fichas',warning:action==='retention'?'Remover fichas vencidas conforme HEALTH_RETENTION_MONTHS. A remoção é irreversível na aplicação e cancela inscrições ativas sem ficha. Execute primeiro a simulação.':'Simulação: nenhuma ficha será removida. O prazo deve estar aprovado e configurado no servidor.',confirmation:action==='retention'?'ELIMINAR_FICHAS_VENCIDAS':undefined,requestExtra:{dryRun:action==='retention-preview'}}:{type:'privacy:export',title:'Exportar dados pessoais',warning:IS_ADMIN?'A agenda contém dados pessoais de participantes. A exportação não inclui fichas de saúde nem avaliações. Confirme sua senha e guarde o arquivo em local privado e criptografado.':'Este arquivo contém seus dados pessoais e fichas de saúde disponíveis. Não o compartilhe publicamente.',downloadName:'iec-dados-'+today()+'.json'};
  window.iecPrivacyAction(options,common);
 }
